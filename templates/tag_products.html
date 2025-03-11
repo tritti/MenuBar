@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="menu-container" style="--primary-color: {{ theme.primary_color }}; --secondary-color: {{ theme.secondary_color }};">
+    <div class="container py-4">
+        <!-- Titolo locale -->
+        <div class="text-center mb-3">
+            <h1 class="cafe-title">Il Caffè della Piazza</h1>
+        </div>
+        
+        {% set tag_badge_class = "badge-" + current_tag.lower().replace('-', '') %}
+        <h2 class="text-center mb-4"><span class="badge {{ tag_badge_class }} fs-5">{{ current_tag }}</span></h2>
+        
+        <!-- Tag navigation -->
+        <div class="tag-navigation text-center mb-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary mb-2" style="transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.2);">Torna al menu completo</a>
+            {% for tag in all_tags %}
+                {% set tag_class_base = tag.lower().replace('-', '') %}
+                {% if tag == current_tag %}
+                    <a href="{{ url_for('products_by_tag', tag=tag) }}" class="btn mb-2 btn-{{ tag_class_base }}">{{ tag }}</a>
+                {% else %}
+                    <a href="{{ url_for('products_by_tag', tag=tag) }}" class="btn mb-2 btn-outline-{{ tag_class_base }}">{{ tag }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <!-- Products list -->
+        <div class="row menu-items">
+            {% for product in products %}
+                <div class="col-6 col-md-4 mb-4 menu-item">
+                    <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
+                        {% if product.image_url %}
+                            <picture>
+                                <source srcset="{{ product.image_url }}.webp" type="image/webp">
+                                <source srcset="{{ product.image_url }}" type="image/png">
+                                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
+                            </picture>
+                        {% endif %}
+                        <div class="card-body">
+                            {% if product.is_featured %}
+                            <span class="featured-badge">In evidenza</span>
+                            {% endif %}
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-subtitle text-muted mb-2">{{ product.category.name }}</p>
+                            {% if product.description %}
+                                <p class="card-text">{{ product.description }}</p>
+                            {% endif %}
+                            
+                            {% if theme.show_prices %}
+                            <div class="price-container">
+                                <p class="price mb-0">€ {{ "%.2f"|format(product.price) }}</p>
+                                {% if product.price_2 and product.price_2 > 0 %}
+                                    <p class="price-2">
+                                        {% if product.price_2_label %}
+                                            {{ product.price_2_label }}: 
+                                        {% endif %}
+                                        € {{ "%.2f"|format(product.price_2) }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if theme.show_allergens and product.allergens %}
+                            <div class="allergens-container mt-2">
+                                <small class="text-muted">Allergeni: {{ product.allergens }}</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.tags %}
+                            <div class="tags-container mt-2">
+                                {% for tag in product.tags.split(',') %}
+                                    {% set tag_class = "badge-" + tag.strip().lower().replace('-', '') %}
+                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 {{ tag_class }}">{{ tag.strip() }}</a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12 text-center">
+                    <p>Nessun prodotto trovato con questo tag.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Pulsante per tornare in cima -->
+    <button id="backToTop" class="btn btn-primary back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+</div>
+
+<!-- Script per la ricerca e filtri -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pulsante torna in cima
+    const backToTopButton = document.getElementById('backToTop');
+    
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+            backToTopButton.classList.add('show');
+        } else {
+            backToTopButton.classList.remove('show');
+        }
+    });
+    
+    backToTopButton.addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+});
+</script>
+{% endblock %}

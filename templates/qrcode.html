@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">QR Code per il Menu Digitale</h3>
+                </div>
+                <div class="card-body py-5">
+                    <p class="lead mb-4">
+                        Scansiona questo QR code per visualizzare il menu digitale sul tuo dispositivo.
+                    </p>
+                    
+                    <div class="qrcode-container mb-4">
+                        <img src="{{ qrcode(menu_url) }}" alt="QR Code del menu" class="img-fluid qrcode-img border p-2">
+                    </div>
+                    
+                    <div class="url-container">
+                        <p class="text-muted">Oppure visita direttamente:</p>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="menuUrl" value="{{ menu_url }}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyUrl()" id="copyButton">
+                                <i class="fas fa-copy"></i> Copia
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="actions mt-4">
+                        <button class="btn btn-primary me-2" onclick="printPage()">
+                            <i class="fas fa-print"></i> Stampa QR Code
+                        </button>
+                        <a href="{{ menu_url }}" class="btn btn-success">
+                            <i class="fas fa-external-link-alt"></i> Apri Menu
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <p class="mb-0 text-muted small">
+                        Puoi stampare questo QR code e posizionarlo nei punti strategici del tuo locale per consentire ai clienti di visualizzare facilmente il menu.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyUrl() {
+    var urlField = document.getElementById('menuUrl');
+    urlField.select();
+    document.execCommand('copy');
+    
+    var copyButton = document.getElementById('copyButton');
+    copyButton.innerHTML = '<i class="fas fa-check"></i> Copiato!';
+    
+    setTimeout(function() {
+        copyButton.innerHTML = '<i class="fas fa-copy"></i> Copia';
+    }, 2000);
+}
+
+function printPage() {
+    window.print();
+}
+</script>
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .qrcode-container, .qrcode-container * {
+        visibility: visible;
+    }
+    .qrcode-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        text-align: center;
+    }
+    .qrcode-img {
+        width: 80%;
+        max-width: 300px;
+    }
+}
+
+.qrcode-img {
+    max-width: 250px;
+    border-radius: 10px;
+}
+</style>
+{% endblock %}

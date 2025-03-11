@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="mb-4">Gestione Tema</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Personalizza l'Aspetto del Menu</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('manage_theme') }}" method="POST">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="theme_name" class="form-label">Nome Tema</label>
+                            <input type="text" class="form-control" id="theme_name" name="theme_name" value="{{ theme.theme_name }}">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="primary_color" class="form-label">Colore Principale</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color" value="{{ theme.primary_color }}">
+                                <input type="text" class="form-control" value="{{ theme.primary_color }}" id="primary_color_hex">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="secondary_color" class="form-label">Colore Secondario</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color" value="{{ theme.secondary_color }}">
+                                <input type="text" class="form-control" value="{{ theme.secondary_color }}" id="secondary_color_hex">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="1" id="show_allergens" name="show_allergens" {% if theme.show_allergens %}checked{% endif %}>
+                            <label class="form-check-label" for="show_allergens">
+                                Mostra Allergeni
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" value="1" id="show_prices" name="show_prices" {% if theme.show_prices %}checked{% endif %}>
+                            <label class="form-check-label" for="show_prices">
+                                Mostra Prezzi
+                            </label>
+                        </div>
+                        
+                        <div class="theme-preview mt-4">
+                            <h6 class="mb-3">Anteprima</h6>
+                            <div class="card theme-card preview-card" id="previewCard">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="previewTitle">Esempio Prodotto</h5>
+                                    <p class="card-text">Descrizione prodotto di esempio che mostra come apparirà il testo.</p>
+                                    <div class="price-container">
+                                        <p class="price mb-0" id="previewPrice">€ 4.50</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="custom_css" class="form-label">CSS Personalizzato (Avanzato)</label>
+                    <textarea class="form-control" id="custom_css" name="custom_css" rows="5">{{ theme.custom_css }}</textarea>
+                    <div class="form-text">
+                        Inserisci CSS personalizzato per modificare ulteriormente l'aspetto del menu. Questa opzione è per utenti avanzati.
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetTheme()">Ripristina Default</button>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-success" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Visualizza Menu
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Altre Opzioni</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-grid">
+                        <a href="{{ url_for('generate_qrcode') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-qrcode me-2"></i> Genera QR Code del Menu
+                        </a>
+                    </div>
+                    <div class="form-text mt-2">
+                        Crea un QR code da stampare per permettere ai clienti di accedere facilmente al menu.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-info" type="button" onclick="toggleDarkModePreview()">
+                            <i class="fas fa-moon me-2"></i> Anteprima Modalità Scura
+                        </button>
+                    </div>
+                    <div class="form-text mt-2">
+                        Visualizza un'anteprima di come apparirebbe il menu in modalità scura.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aggiorna anteprima in tempo reale
+    const primaryColorInput = document.getElementById('primary_color');
+    const secondaryColorInput = document.getElementById('secondary_color');
+    const primaryColorHex = document.getElementById('primary_color_hex');
+    const secondaryColorHex = document.getElementById('secondary_color_hex');
+    const previewCard = document.getElementById('previewCard');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewPrice = document.getElementById('previewPrice');
+    
+    // Sincronizza input colore e campo testo
+    primaryColorInput.addEventListener('input', function() {
+        primaryColorHex.value = this.value;
+        updatePreview();
+    });
+    
+    primaryColorHex.addEventListener('input', function() {
+        primaryColorInput.value = this.value;
+        updatePreview();
+    });
+    
+    secondaryColorInput.addEventListener('input', function() {
+        secondaryColorHex.value = this.value;
+        updatePreview();
+    });
+    
+    secondaryColorHex.addEventListener('input', function() {
+        secondaryColorInput.value = this.value;
+        updatePreview();
+    });
+    
+    function updatePreview() {
+        previewTitle.style.color = secondaryColorInput.value;
+        previewPrice.style.color = primaryColorInput.value;
+        previewCard.style.borderColor = primaryColorInput.value;
+    }
+    
+    // Inizializza anteprima
+    updatePreview();
+});
+
+function resetTheme() {
+    if (confirm('Sei sicuro di voler ripristinare i colori predefiniti?')) {
+        document.getElementById('primary_color').value = '#8B0000';
+        document.getElementById('secondary_color').value = '#2c3e50';
+        document.getElementById('primary_color_hex').value = '#8B0000';
+        document.getElementById('secondary_color_hex').value = '#2c3e50';
+        document.getElementById('show_allergens').checked = true;
+        document.getElementById('show_prices').checked = true;
+        document.getElementById('custom_css').value = '';
+        
+        // Aggiorna anteprima
+        const previewTitle = document.getElementById('previewTitle');
+        const previewPrice = document.getElementById('previewPrice');
+        const previewCard = document.getElementById('previewCard');
+        previewTitle.style.color = '#2c3e50';
+        previewPrice.style.color = '#8B0000';
+        previewCard.style.borderColor = '#8B0000';
+    }
+}
+
+function toggleDarkModePreview() {
+    const previewCard = document.getElementById('previewCard');
+    previewCard.classList.toggle('dark-mode');
+    
+    if (previewCard.classList.contains('dark-mode')) {
+        previewCard.style.backgroundColor = '#1e1e1e';
+        previewCard.style.color = '#e0e0e0';
+    } else {
+        previewCard.style.backgroundColor = '#fff';
+        previewCard.style.color = '#212529';
+    }
+}
+</script>
+
+<style>
+.form-control-color {
+    width: 60px;
+}
+
+.theme-preview {
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.preview-card {
+    transition: all 0.3s ease;
+    border-width: 2px;
+}
+
+.dark-mode {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+}
+</style>
+{% endblock %}

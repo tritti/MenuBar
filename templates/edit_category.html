@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Modifica Categoria</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_category', category_id=category.id) }}" method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ category.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="parent_id" class="form-label">Categoria Principale</label>
+                            <select class="form-select" id="parent_id" name="parent_id">
+                                <option value="">Nessuna (categoria principale)</option>
+                                {% for parent in main_categories %}
+                                    {% if parent.id != category.id %}
+                                    <option value="{{ parent.id }}" {% if parent.id == category.parent_id %}selected{% endif %}>
+                                        {{ parent.name }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="icon" class="form-label">Icona</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="icon" name="icon" value="{{ category.icon or '' }}">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#imagePickerModal">
+                                    <i class="fas fa-images me-1"></i> Scegli
+                                </button>
+                            </div>
+                            <div class="mt-2" id="imagePreview">
+                                {% if category.icon %}
+                                <img src="{{ category.icon }}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Modal per selezionare le immagini -->
+                        <div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="imagePickerModalLabel">Seleziona un'immagine</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-3 image-loader">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Caricamento...</span>
+                                            </div>
+                                            <p>Caricamento immagini...</p>
+                                        </div>
+                                        <div class="row image-gallery"></div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Posizione (ordine di visualizzazione)</label>
+                            <input type="number" class="form-control" id="position" name="position" value="{{ category.position or 0 }}">
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if category.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Categoria attiva
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="card-body">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="auto_activate" name="auto_activate" {% if category.auto_activate %}checked{% endif %}>
+                                    <label class="form-check-label" for="auto_activate">
+                                        Attiva/disattiva automaticamente in base a giorni e orari
+                                    </label>
+                                </div>
+                                
+                                <div id="auto_activate_options" class="ps-4 {% if not category.auto_activate %}d-none{% endif %}">
+                                    <div class="mb-3">
+                                        <label class="form-label">Giorni di attivazione:</label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% set active_days = category.active_days.split(',') %}
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_0" value="0" {% if '0' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_0">Lunedì</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_1" value="1" {% if '1' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_1">Martedì</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_2" value="2" {% if '2' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_2">Mercoledì</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_3" value="3" {% if '3' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_3">Giovedì</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_4" value="4" {% if '4' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_4">Venerdì</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_5" value="5" {% if '5' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_5">Sabato</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input day-checkbox" type="checkbox" id="day_6" value="6" {% if '6' in active_days %}checked{% endif %}>
+                                                <label class="form-check-label" for="day_6">Domenica</label>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="active_days" id="active_days_input" value="{{ category.active_days }}">
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="active_start_time" class="form-label">Orario di inizio:</label>
+                                            <input type="time" class="form-control" id="active_start_time" name="active_start_time" value="{{ category.active_start_time }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="active_end_time" class="form-label">Orario di fine:</label>
+                                            <input type="time" class="form-control" id="active_end_time" name="active_end_time" value="{{ category.active_end_time }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin') }}" class="btn btn-secondary">Annulla</a>
+                            <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+                        </div>
+                        
+                        <!-- Script per gestire il selettore di immagini e i giorni attivi -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Gestione selezione immagini
+                                const iconInput = document.getElementById('icon');
+                                const imagePreview = document.getElementById('imagePreview');
+                                const imageGallery = document.querySelector('.image-gallery');
+                                const imageLoader = document.querySelector('.image-loader');
+                                const imagePickerModal = document.getElementById('imagePickerModal');
+                                
+                                // Aggiorna anteprima quando cambia l'URL dell'immagine
+                                iconInput.addEventListener('change', updateImagePreview);
+                                
+                                function updateImagePreview() {
+                                    const url = iconInput.value.trim();
+                                    if (url) {
+                                        imagePreview.innerHTML = `<img src="${url}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">`;
+                                    } else {
+                                        imagePreview.innerHTML = '';
+                                    }
+                                }
+                                
+                                // Carica le immagini quando si apre il modal
+                                imagePickerModal.addEventListener('show.bs.modal', loadImages);
+                                
+                                function loadImages() {
+                                    // Mostra il loader
+                                    imageLoader.style.display = 'block';
+                                    imageGallery.innerHTML = '';
+                                    
+                                    // Richiedi le immagini all'API
+                                    fetch('/api/images')
+                                        .then(response => response.json())
+                                        .then(images => {
+                                            // Nascondi il loader
+                                            imageLoader.style.display = 'none';
+                                            
+                                            // Visualizza le immagini
+                                            if (images.length === 0) {
+                                                imageGallery.innerHTML = '<div class="col-12 text-center">Nessuna immagine trovata</div>';
+                                                return;
+                                            }
+                                            
+                                            images.forEach(image => {
+                                                const col = document.createElement('div');
+                                                col.className = 'col-md-3 col-sm-4 col-6 mb-3';
+                                                
+                                                col.innerHTML = `
+                                                    <div class="card image-card h-100">
+                                                        <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 100px; object-fit: cover;">
+                                                        <div class="card-body p-2">
+                                                            <p class="card-text small text-truncate">${image.name}</p>
+                                                            <button type="button" class="btn btn-sm btn-primary w-100 select-image">Seleziona</button>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                                
+                                                // Aggiungi event listener al pulsante Seleziona
+                                                const selectButton = col.querySelector('.select-image');
+                                                selectButton.addEventListener('click', function() {
+                                                    iconInput.value = image.url;
+                                                    updateImagePreview();
+                                                    
+                                                    // Chiudi il modal
+                                                    const modal = bootstrap.Modal.getInstance(imagePickerModal);
+                                                    modal.hide();
+                                                });
+                                                
+                                                imageGallery.appendChild(col);
+                                            });
+                                        })
+                                        .catch(error => {
+                                            console.error('Errore nel caricamento delle immagini:', error);
+                                            imageLoader.style.display = 'none';
+                                            imageGallery.innerHTML = '<div class="col-12 text-center text-danger">Errore nel caricamento delle immagini</div>';
+                                        });
+                                }
+                                
+                                // Gestione attivazione automatica
+                                const autoActivateCheckbox = document.getElementById('auto_activate');
+                                const autoActivateOptions = document.getElementById('auto_activate_options');
+                                
+                                // Mostra/nascondi opzioni di attivazione automatica
+                                autoActivateCheckbox.addEventListener('change', function() {
+                                    if (this.checked) {
+                                        autoActivateOptions.classList.remove('d-none');
+                                    } else {
+                                        autoActivateOptions.classList.add('d-none');
+                                    }
+                                });
+                                
+                                // Gestione giorni attivi
+                                const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+                                const activeDaysInput = document.getElementById('active_days_input');
+                                
+                                function updateActiveDaysInput() {
+                                    const selectedDays = Array.from(dayCheckboxes)
+                                        .filter(checkbox => checkbox.checked)
+                                        .map(checkbox => checkbox.value);
+                                    
+                                    activeDaysInput.value = selectedDays.join(',');
+                                }
+                                
+                                // Aggiorna quando cambia una selezione
+                                dayCheckboxes.forEach(checkbox => {
+                                    checkbox.addEventListener('change', updateActiveDaysInput);
+                                });
+                                
+                                // Inizializza i campi
+                                updateActiveDaysInput();
+                            });
+                        </script>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

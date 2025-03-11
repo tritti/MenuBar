@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Modifica Prodotto</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_product', product_id=product.id) }}" method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descrizione</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ product.description }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Prezzo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="price" name="price" step="0.01" value="{{ product.price }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="price_2_label" class="form-label">Etichetta Secondo Prezzo</label>
+                            <input type="text" class="form-control" id="price_2_label" name="price_2_label" value="{{ product.price_2_label }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="price_2" class="form-label">Secondo Prezzo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control" id="price_2" name="price_2" step="0.01" value="{{ product.price_2 or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label">Categoria</label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if category.id == product.category_id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Immagine</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="image_url" name="image_url" value="{{ product.image_url or '' }}">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#imagePickerModal">
+                                    <i class="fas fa-images me-1"></i> Scegli
+                                </button>
+                            </div>
+                            <div class="mt-2" id="imagePreview">
+                                {% if product.image_url %}
+                                <img src="{{ product.image_url }}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Modal per selezionare le immagini -->
+                        <div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="imagePickerModalLabel">Seleziona un'immagine</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-3 image-loader">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Caricamento...</span>
+                                            </div>
+                                            <p>Caricamento immagini...</p>
+                                        </div>
+                                        <div class="row image-gallery"></div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Allergeni</label>
+                            <div id="allergensContainer" class="border rounded p-3">
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_glutine" value="Glutine" {% if 'Glutine' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_glutine">Glutine</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_crostacei" value="Crostacei" {% if 'Crostacei' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_crostacei">Crostacei</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_uova" value="Uova" {% if 'Uova' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_uova">Uova</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_pesce" value="Pesce" {% if 'Pesce' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_pesce">Pesce</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_arachidi" value="Arachidi" {% if 'Arachidi' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_arachidi">Arachidi</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_soia" value="Soia" {% if 'Soia' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_soia">Soia</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_latte" value="Latte" {% if 'Latte' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_latte">Latte</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_frutta" value="Frutta a guscio" {% if 'Frutta a guscio' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_frutta">Frutta a guscio</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sedano" value="Sedano" {% if 'Sedano' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_sedano">Sedano</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_senape" value="Senape" {% if 'Senape' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_senape">Senape</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sesamo" value="Semi di sesamo" {% if 'Semi di sesamo' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_sesamo">Semi di sesamo</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_lupini" value="Lupini" {% if 'Lupini' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_lupini">Lupini</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_molluschi" value="Molluschi" {% if 'Molluschi' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_molluschi">Molluschi</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_anidride" value="Anidride solforosa" {% if 'Anidride solforosa' in (product.allergens or '') %}checked{% endif %}>
+                                            <label class="form-check-label" for="allergen_anidride">Anidride solforosa</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Campo nascosto che conterrà gli allergeni selezionati -->
+                                <input type="hidden" name="allergens" id="allergens_input" value="{{ product.allergens or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tag Prodotto</label>
+                            <div class="tag-container border rounded p-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegano" value="vegano" {% if 'vegano' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_vegano">Vegano</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegetariano" value="vegetariano" {% if 'vegetariano' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_vegetariano">Vegetariano</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_piccante" value="piccante" {% if 'piccante' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_piccante">Piccante</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_glutenfree" value="gluten-free" {% if 'gluten-free' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_glutenfree">Senza Glutine</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_bio" value="bio" {% if 'bio' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_bio">Biologico</label>
+                                </div>
+                                
+                                <!-- Campo nascosto che conterrà i tag selezionati -->
+                                <input type="hidden" name="tags" id="tags_input" value="{{ product.tags or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_available" name="is_available" {% if product.is_available %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_available">
+                                        Prodotto disponibile
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" {% if product.is_featured %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_featured">
+                                        Prodotto in evidenza
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Posizione (ordine di visualizzazione)</label>
+                            <input type="number" class="form-control" id="position" name="position" value="{{ product.position or 0 }}">
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin') }}" class="btn btn-secondary">Annulla</a>
+                            <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+                        </div>
+                        
+                        <!-- Script per gestire i tag e gli allergeni -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Aggiorna il campo nascosto quando si selezionano i tag
+                                const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
+                                const tagsInput = document.getElementById('tags_input');
+                                
+                                function updateTagsInput() {
+                                    const selectedTags = Array.from(tagCheckboxes)
+                                        .filter(checkbox => checkbox.checked)
+                                        .map(checkbox => checkbox.value);
+                                    
+                                    tagsInput.value = selectedTags.join(',');
+                                }
+                                
+                                // Aggiorna quando cambia una selezione
+                                tagCheckboxes.forEach(checkbox => {
+                                    checkbox.addEventListener('change', updateTagsInput);
+                                });
+                                
+                                // Gestione allergeni
+                                const allergenCheckboxes = document.querySelectorAll('.allergen-checkbox');
+                                const allergensInput = document.getElementById('allergens_input');
+                                
+                                function updateAllergensInput() {
+                                    const selectedAllergens = Array.from(allergenCheckboxes)
+                                        .filter(checkbox => checkbox.checked)
+                                        .map(checkbox => checkbox.value);
+                                    
+                                    allergensInput.value = selectedAllergens.join(', ');
+                                }
+                                
+                                // Aggiorna quando cambia una selezione degli allergeni
+                                allergenCheckboxes.forEach(checkbox => {
+                                    checkbox.addEventListener('change', updateAllergensInput);
+                                });
+                                
+                                // Inizializza i campi
+                                updateTagsInput();
+                                updateAllergensInput();
+                                
+                                // Gestione selezione immagini
+                                const imageUrl = document.getElementById('image_url');
+                                const imagePreview = document.getElementById('imagePreview');
+                                const imageGallery = document.querySelector('.image-gallery');
+                                const imageLoader = document.querySelector('.image-loader');
+                                const imagePickerModal = document.getElementById('imagePickerModal');
+                                
+                                // Aggiorna anteprima quando cambia l'URL dell'immagine
+                                imageUrl.addEventListener('change', updateImagePreview);
+                                
+                                function updateImagePreview() {
+                                    const url = imageUrl.value.trim();
+                                    if (url) {
+                                        imagePreview.innerHTML = `<img src="${url}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">`;
+                                    } else {
+                                        imagePreview.innerHTML = '';
+                                    }
+                                }
+                                
+                                // Carica le immagini quando si apre il modal
+                                imagePickerModal.addEventListener('show.bs.modal', loadImages);
+                                
+                                function loadImages() {
+                                    // Mostra il loader
+                                    imageLoader.style.display = 'block';
+                                    imageGallery.innerHTML = '';
+                                    
+                                    // Richiedi le immagini all'API
+                                    fetch('/api/images')
+                                        .then(response => response.json())
+                                        .then(images => {
+                                            // Nascondi il loader
+                                            imageLoader.style.display = 'none';
+                                            
+                                            // Visualizza le immagini
+                                            if (images.length === 0) {
+                                                imageGallery.innerHTML = '<div class="col-12 text-center">Nessuna immagine trovata</div>';
+                                                return;
+                                            }
+                                            
+                                            images.forEach(image => {
+                                                const col = document.createElement('div');
+                                                col.className = 'col-md-3 col-sm-4 col-6 mb-3';
+                                                
+                                                col.innerHTML = `
+                                                    <div class="card image-card h-100">
+                                                        <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 100px; object-fit: cover;">
+                                                        <div class="card-body p-2">
+                                                            <p class="card-text small text-truncate">${image.name}</p>
+                                                            <button type="button" class="btn btn-sm btn-primary w-100 select-image">Seleziona</button>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                                
+                                                // Aggiungi event listener al pulsante Seleziona
+                                                const selectButton = col.querySelector('.select-image');
+                                                selectButton.addEventListener('click', function() {
+                                                    imageUrl.value = image.url;
+                                                    updateImagePreview();
+                                                    
+                                                    // Chiudi il modal
+                                                    const modal = bootstrap.Modal.getInstance(imagePickerModal);
+                                                    modal.hide();
+                                                });
+                                                
+                                                imageGallery.appendChild(col);
+                                            });
+                                        })
+                                        .catch(error => {
+                                            console.error('Errore nel caricamento delle immagini:', error);
+                                            imageLoader.style.display = 'none';
+                                            imageGallery.innerHTML = '<div class="col-12 text-center text-danger">Errore nel caricamento delle immagini</div>';
+                                        });
+                                }
+                            });
+                        </script>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
