@@ -376,6 +376,9 @@ def edit_category(category_id):
 @app.route('/product/add', methods=['POST'])
 @login_required
 def add_product():
+    # Importa la funzione di invalidazione della cache
+    from cache_utils import invalidate_cache
+    
     try:
         # Get selected categories
         category_ids = request.form.getlist('category_ids[]')
@@ -389,6 +392,9 @@ def add_product():
         # Determine the last position in the primary category
         last_position = db.session.query(db.func.max(Product.position)).filter_by(category_id=primary_category_id).scalar() or 0
         
+        # Ottieni i tag dal form
+        tags = request.form.get('tags', '')
+        
         new_product = Product(
             name=request.form['name'],
             description=request.form['description'],
@@ -400,7 +406,7 @@ def add_product():
             is_available=bool(request.form.get('is_available', True)),
             is_featured=bool(request.form.get('is_featured', False)),
             allergens=request.form.get('allergens', ''),
-            tags=request.form.get('tags', ''),
+            tags=tags,
             position=last_position + 1,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
@@ -412,6 +418,12 @@ def add_product():
             
         db.session.add(new_product)
         db.session.commit()
+        
+        # Invalida la cache se ci sono tag
+        if tags:
+            invalidate_cache('menu_data')
+            print("Cache del menu invalidata per nuovo prodotto con tag")
+            
         flash('Prodotto aggiunto con successo!', 'success')
     except Exception as e:
         db.session.rollback()
@@ -422,6 +434,9 @@ def add_product():
 @app.route('/product/edit/<int:product_id>', methods=['GET', 'POST'])
 @login_required
 def edit_product(product_id):
+    # Importa la funzione di invalidazione della cache
+    from cache_utils import invalidate_cache
+    
     product = Product.query.get_or_404(product_id)
     categories = Category.query.order_by(Category.position).all()
     
@@ -459,11 +474,22 @@ def edit_product(product_id):
             product.is_available = 'is_available' in request.form
             product.is_featured = 'is_featured' in request.form
             product.allergens = request.form.get('allergens', '')
-            product.tags = request.form.get('tags', '')
+            
+            # Controlla se ci sono modifiche ai tag per invalidare la cache
+            old_tags = product.tags or ''
+            new_tags = request.form.get('tags', '')
+            
+            product.tags = new_tags
             product.position = int(position)
             product.updated_at = datetime.utcnow()
             
             db.session.commit()
+            
+            # Invalida la cache del menu quando vengono modificati i tag
+            if old_tags != new_tags:
+                invalidate_cache('menu_data')
+                print("Cache del menu invalidata a causa di modifiche ai tag")
+            
             flash('Prodotto aggiornato con successo!', 'success')
             return redirect(url_for('admin'))
         except ValueError as ve:
@@ -478,9 +504,22 @@ def edit_product(product_id):
 @app.route('/product/delete/<int:product_id>', methods=['GET', 'POST'])
 @login_required
 def delete_product(product_id):
+    # Importa la funzione di invalidazione della cache
+    from cache_utils import invalidate_cache
+    
     product = Product.query.get_or_404(product_id)
+    
+    # Controlla se il prodotto ha tag prima di eliminarlo
+    has_tags = bool(product.tags)
+    
     db.session.delete(product)
     db.session.commit()
+    
+    # Invalida la cache se il prodotto aveva tag
+    if has_tags:
+        invalidate_cache('menu_data')
+        print("Cache del menu invalidata dopo eliminazione prodotto con tag")
+    
     flash('Prodotto eliminato con successo!')
     return redirect(url_for('admin'))
 

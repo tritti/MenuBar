@@ -211,6 +211,10 @@
                                     <input class="form-check-input tag-checkbox" type="checkbox" id="tag_bio" value="bio" {% if 'bio' in (product.tags or '') %}checked{% endif %}>
                                     <label class="form-check-label" for="tag_bio">Biologico</label>
                                 </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_artigianale" value="artigianale" {% if 'artigianale' in (product.tags or '') %}checked{% endif %}>
+                                    <label class="form-check-label" for="tag_artigianale">Artigianale</label>
+                                </div>
                                 
                                 <!-- Campo nascosto che conterrà i tag selezionati -->
                                 <input type="hidden" name="tags" id="tags_input" value="{{ product.tags or '' }}">

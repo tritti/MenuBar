@@ -1063,6 +1063,21 @@ a.badge:hover {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+/* Blu */
+.badge-artigianale, .btn-artigianale {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #3498db !important;
+}
+
+.btn-outline-artigianale {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #3498db !important;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
 /* Tag più visibile in modalità scura */
 body.dark-mode a.badge {
     border: 1px solid #444;
