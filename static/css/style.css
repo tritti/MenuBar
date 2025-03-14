@@ -679,6 +679,37 @@ body.dark-mode .allergen-checkbox:checked + label {
     margin-bottom: 1rem;
     font-size: 0.9rem;
     line-height: 1.5;
+    max-height: 2.7rem;
+    overflow: hidden;
+    position: relative;
+    transition: max-height 0.3s ease;
+}
+
+.card-text.expanded {
+    max-height: 300px;
+}
+
+.description-toggle {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    cursor: pointer;
+    margin-top: 0.3rem;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.description-toggle:hover {
+    text-decoration: underline;
+}
+
+/* Miglioramento visibilità in dark mode */
+body.dark-mode .description-toggle {
+    color: #ff8a8a; /* Rosso più chiaro per migliore contrasto */
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .price-container {
@@ -1106,6 +1137,46 @@ body.dark-mode a.badge:hover {
 .admin-card {
     margin-bottom: 30px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Admin page dark mode styles */
+body.dark-mode .admin-container {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .admin-container .card {
+    background-color: #2c2c2c;
+    border-color: #444;
+}
+
+body.dark-mode .admin-container .card-header {
+    background-color: #333;
+    border-bottom-color: #444;
+}
+
+body.dark-mode .admin-container .btn-link {
+    color: #e0e0e0;
+}
+
+body.dark-mode .admin-container .form-label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .admin-container .table {
+    color: #e0e0e0;
+}
+
+body.dark-mode .admin-container .table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #2c2c2c;
+}
+
+body.dark-mode .admin-container .border {
+    border-color: #444 !important;
+}
+
+body.dark-mode .admin-container .text-muted {
+    color: #aaa !important;
 }
 
 /* Stile per gli elementi trascinabili */

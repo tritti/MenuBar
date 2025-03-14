@@ -87,6 +87,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Animazione per le card all'apertura della pagina
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach((item, index) => {
+        // Disabilita temporaneamente le animazioni
+        // NOTA: Questo codice è stato temporaneamente disabilitato per migliorare le prestazioni
+        // Ripristinare in futuro se necessario
+        /*
         item.style.opacity = '0';
         item.style.transform = 'translateY(20px)';
         item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -95,41 +99,237 @@ document.addEventListener('DOMContentLoaded', function() {
             item.style.opacity = '1';
             item.style.transform = 'translateY(0)';
         }, 100 * index);
+        */
+        
+        // Mostra direttamente gli elementi senza animazione
+        item.style.opacity = '1';
     });
 
-    // Gestione lazy loading immagini
-    if ('loading' in HTMLImageElement.prototype) {
-        // Il browser supporta lazy loading nativo
-        document.querySelectorAll('img[data-src]').forEach(img => {
-            img.src = img.dataset.src;
-        });
-    } else {
-        // Fallback per browser che non supportano lazy loading nativo
-        const lazyImages = document.querySelectorAll('img[data-src]');
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const image = entry.target;
-                        image.src = image.dataset.src;
-                        imageObserver.unobserve(image);
+    // Gestione lazy loading immagini ottimizzata
+    function setupLazyLoading() {
+        // Carica immediatamente solo le immagini visibili nella viewort iniziale
+        // e prepara il caricamento lazy per le altre quando diventano visibili 
+        const loadVisibleImages = () => {
+            // Inizializza solo le immagini visibili nella viewport iniziale
+            const lazyImages = document.querySelectorAll('img[data-src]');
+            
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const image = entry.target;
+                            if (image.dataset.src && !image.src) {
+                                // Caricamento diretto senza effetti
+                                image.src = image.dataset.src;
+                                // Rimuovi data-src dopo il caricamento per evitare caricamenti duplicati
+                                image.removeAttribute('data-src');
+                                imageObserver.unobserve(image);
+                            }
+                        }
+                    });
+                }, {
+                    rootMargin: '300px 0px', // Aumentato da 200px a 300px per precaricare più in anticipo
+                    threshold: 0.01
+                });
+                
+                // Osserva tutte le immagini con data-src
+                lazyImages.forEach(image => {
+                    // Assicurati che l'immagine non sia già stata caricata
+                    if (image.dataset.src && !image.src) {
+                        imageObserver.observe(image);
                     }
                 });
-            });
-
-            lazyImages.forEach(image => {
-                imageObserver.observe(image);
-            });
-        } else {
-            // Fallback semplice
-            lazyImages.forEach(image => {
-                image.src = image.dataset.src;
-            });
+            } else {
+                // Fallback per browser più vecchi che non supportano IntersectionObserver
+                // Carica solo le immagini nelle categorie espanse
+                const expandedCategories = document.querySelectorAll('.accordion-collapse.show');
+                expandedCategories.forEach(category => {
+                    const categoryImages = category.querySelectorAll('img[data-src]');
+                    categoryImages.forEach(image => {
+                        if (image.dataset.src && !image.src) {
+                            image.src = image.dataset.src;
+                            image.removeAttribute('data-src');
+                        }
+                    });
+                });
+            }
+        };
+    
+        // Carica le immagini visibili all'inizio
+        loadVisibleImages();
+        
+        // Ricarica quando l'utente interagisce con il menu (espande categorie)
+        const categoriesAccordion = document.querySelector('.categories-accordion');
+        if (categoriesAccordion) {
+            categoriesAccordion.addEventListener('shown.bs.collapse', loadVisibleImages);
         }
+        
+        // Imposta un timer per controllare nuovamente dopo lo scroll
+        let scrollTimer;
+        window.addEventListener('scroll', () => {
+            if (scrollTimer) clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(loadVisibleImages, 300); // Aumentato da 200ms a 300ms
+        }, { passive: true });
     }
+    
+    // Inizializza lazy loading
+    setupLazyLoading();
+    
+    // Funzione per gestire l'espansione delle descrizioni
+    function setupDescriptionToggles() {
+        // Seleziona tutte le descrizioni disponibili
+        const descriptions = document.querySelectorAll('.card-text');
+        
+        descriptions.forEach(description => {
+            // Se c'è testo nella descrizione
+            if (description.textContent.trim()) {
+                // Verifica se un pulsante già esiste per questa descrizione
+                let existingToggle = description.nextElementSibling;
+                if (existingToggle && existingToggle.classList.contains('description-toggle')) {
+                    // Pulsante già esistente, salta questa descrizione
+                    return;
+                }
+                
+                // Controlla se la descrizione è più alta del contenitore (overflow)
+                if (description.scrollHeight > description.clientHeight) {
+                    // Crea pulsante per espandere/comprimere
+                    const toggleButton = document.createElement('span');
+                    toggleButton.className = 'description-toggle';
+                    toggleButton.textContent = 'Leggi di più';
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                    
+                    // Aggiungi pulsante dopo la descrizione
+                    description.parentNode.insertBefore(toggleButton, description.nextSibling);
+                    
+                    // Aggiungi evento per espandere/comprimere
+                    toggleButton.addEventListener('click', function() {
+                        const expanded = this.getAttribute('aria-expanded') === 'true';
+                        
+                        if (expanded) {
+                            // Comprimi descrizione
+                            description.classList.remove('expanded');
+                            this.textContent = 'Leggi di più';
+                            this.setAttribute('aria-expanded', 'false');
+                        } else {
+                            // Espandi descrizione
+                            description.classList.add('expanded');
+                            this.textContent = 'Mostra meno';
+                            this.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+                }
+            }
+        });
+    }
+    
+    // Avvia il setup delle descrizioni espandibili quando si apre una categoria
+    document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+        collapse.addEventListener('shown.bs.collapse', function() {
+            // Timeout per permettere al contenuto di essere completamente renderizzato
+            setTimeout(() => {
+                setupDescriptionToggles();
+            }, 100);
+        });
+    });
+    
+    // Setup per i prodotti in evidenza già visibili all'apertura
+    setTimeout(() => {
+        // Setup iniziale per tutti i prodotti visibili con un piccolo ritardo
+        // per assicurarsi che tutto sia renderizzato
+        setupDescriptionToggles();
+    }, 500);
 
-    // Animazione accordion (per categorie principali e sottocategorie)
+    // Animazione accordion (per categorie principali e sottocategorie) - versione ottimizzata
     function setupAccordionAnimations() {
+        // Memorizza le categorie già caricate per evitare ricaricamenti
+        const loadedCategories = new Set();
+        
+        // Verifica se la categoria è una di quelle pesanti che richiedono ottimizzazione
+        function isLargeCategory(categoryName) {
+            if (!categoryName) return false;
+            const lowerName = categoryName.toLowerCase();
+            return lowerName.includes('pranzo') || lowerName.includes('cena');
+        }
+        
+        // Pre-carica le sezioni pesanti (pranzo, cena) appena dopo il caricamento iniziale della pagina
+        function preloadLargeSections() {
+            if (typeof MenuCache !== 'undefined' && MenuCache.PRECACHE_SECTIONS) {
+                // Trova i pulsanti delle categorie principali corrispondenti a sezioni da pre-caricare
+                const accordionButtons = document.querySelectorAll('.accordion-button');
+                const buttonsToPreload = [];
+                
+                // Identifica i pulsanti delle sezioni da precaricare
+                accordionButtons.forEach(button => {
+                    const categoryName = button.textContent.trim();
+                    const categoryId = button.getAttribute('data-bs-target');
+                    
+                    if (MenuCache.PRECACHE_SECTIONS.some(section => 
+                        categoryName.toLowerCase().includes(section.toLowerCase()))) {
+                        buttonsToPreload.push({button, categoryName, categoryId});
+                    }
+                });
+                
+                // Precarica in background con un ritardo
+                if (buttonsToPreload.length > 0) {
+                    console.log(`Pre-caricamento di ${buttonsToPreload.length} sezioni grandi...`);
+                    setTimeout(() => {
+                        buttonsToPreload.forEach(({categoryId}, index) => {
+                            if (categoryId) {
+                                const content = document.querySelector(categoryId);
+                                if (content) {
+                                    // Prepara i contenuti ma lascia il pannello chiuso
+                                    preloadCategoryContent(content, false);
+                                }
+                            }
+                        });
+                    }, 1000); // Ritardo di 1 secondo dopo il caricamento iniziale
+                }
+            }
+        }
+        
+        // Precarica il contenuto di una categoria
+        function preloadCategoryContent(container, showAnimation = true) {
+            if (!container) return;
+            
+            // Evita di ricaricare se già caricato
+            const categoryId = container.id;
+            if (loadedCategories.has(categoryId)) return;
+            
+            // Carica le immagini lazy
+            const lazyImages = container.querySelectorAll('img[data-src]');
+            if (lazyImages.length > 0) {
+                lazyImages.forEach(img => {
+                    if (img.dataset.src && !img.src) {
+                        // Assegna direttamente l'immagine senza animazione
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                    }
+                });
+            }
+            
+            // Segna come caricato
+            loadedCategories.add(categoryId);
+            
+            // Disabilita temporaneamente le animazioni
+            // NOTA: Questo codice è stato temporaneamente disabilitato per migliorare le prestazioni
+            // Ripristinare in futuro se necessario
+            /*
+            if (showAnimation) {
+                const accordionBody = container.querySelector('.accordion-body');
+                if (accordionBody) {
+                    accordionBody.style.opacity = '0';
+                    accordionBody.style.transform = 'translateY(-10px)';
+                    
+                    setTimeout(() => {
+                        accordionBody.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                        accordionBody.style.opacity = '1';
+                        accordionBody.style.transform = 'translateY(0)';
+                    }, 10); // Riduci il ritardo a 10ms invece di 50ms
+                }
+            }
+            */
+        }
+        
         // Per le categorie principali
         const accordionButtons = document.querySelectorAll('.accordion-button');
         accordionButtons.forEach(button => {
@@ -138,45 +338,74 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (!isCollapsed) {
                     // Si sta aprendo l'accordion
-                    const accordionBody = this.closest('.accordion-item').querySelector('.accordion-body');
-                    accordionBody.style.opacity = '0';
-                    accordionBody.style.transform = 'translateY(-10px)';
+                    const categoryName = this.textContent.trim();
+                    const accordionItem = this.closest('.accordion-item');
+                    const contentContainer = accordionItem.querySelector('.accordion-collapse');
                     
-                    setTimeout(() => {
-                        accordionBody.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                        accordionBody.style.opacity = '1';
-                        accordionBody.style.transform = 'translateY(0)';
-                    }, 50);
+                    // Usa un'animazione semplificata per sezioni grandi
+                    if (isLargeCategory(categoryName)) {
+                        console.log(`Ottimizzazione apertura sezione grande: ${categoryName}`);
+                        preloadCategoryContent(contentContainer, true);
+                    } else {
+                        // Approccio normale per categorie più piccole
+                        preloadCategoryContent(contentContainer, true);
+                    }
                 }
             });
         });
         
-        // Per le sottocategorie
-        const subcategoryButtons = document.querySelectorAll('.subcategory-button');
-        subcategoryButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const isCollapsed = this.classList.contains('collapsed');
+        // Per le sottocategorie - approccio ottimizzato con delegazione degli eventi
+        const categoriesContainer = document.querySelector('.categories-accordion');
+        if (categoriesContainer) {
+            // Unico event listener per tutti i pulsanti delle sottocategorie
+            categoriesContainer.addEventListener('click', function(event) {
+                // Verifica se il click è su un pulsante di sottocategoria
+                const button = event.target.closest('.subcategory-button');
+                if (!button) return;
                 
+                const isCollapsed = button.classList.contains('collapsed');
                 if (!isCollapsed) {
                     // Si sta aprendo la sottocategoria
-                    const target = this.getAttribute('data-bs-target');
-                    const subcategoryContent = document.querySelector(target);
+                    const targetId = button.getAttribute('data-bs-target');
+                    if (!targetId) return;
                     
-                    subcategoryContent.addEventListener('shown.bs.collapse', function() {
-                        // Animazione quando il contenuto è completamente visibile
+                    const subcategoryContent = document.querySelector(targetId);
+                    if (!subcategoryContent) return;
+                    
+                    // Prenota l'animazione per quando il contenuto è mostrato
+                    subcategoryContent.addEventListener('shown.bs.collapse', function handleShown() {
                         const section = this.querySelector('.subcategory-section');
-                        section.style.opacity = '0';
-                        section.style.transform = 'translateY(10px)';
+                        if (section) {
+                            // Carica le immagini
+                            const lazyImages = section.querySelectorAll('img[data-src]');
+                            lazyImages.forEach(img => {
+                                if (img.dataset.src && !img.src) {
+                                    img.src = img.dataset.src;
+                                    img.removeAttribute('data-src');
+                                }
+                            });
+                            
+                            // Disabilita temporaneamente le animazioni
+                            // NOTA: Questo codice è stato temporaneamente disabilitato per migliorare le prestazioni
+                            // Ripristinare in futuro se necessario
+                            /*
+                            section.style.opacity = '0';
+                            requestAnimationFrame(() => {
+                                section.style.transition = 'opacity 0.2s ease';
+                                section.style.opacity = '1';
+                            });
+                            */
+                        }
                         
-                        setTimeout(() => {
-                            section.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                            section.style.opacity = '1';
-                            section.style.transform = 'translateY(0)';
-                        }, 10);
-                    }, {once: true}); // esegue una sola volta per apertura
+                        // Rimuovi l'event listener dopo l'esecuzione
+                        this.removeEventListener('shown.bs.collapse', handleShown);
+                    });
                 }
             });
-        });
+        }
+        
+        // Avvia il precaricamento delle sezioni grandi
+        setTimeout(preloadLargeSections, 500);
     }
     
     // Inizializza le animazioni
@@ -255,4 +484,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inizializza dark mode
     initDarkMode();
+    
+    // Product search functionality
+    const searchInput = document.getElementById('productSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#productsSortable tr');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+                const category = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+                const price = row.querySelector('td:nth-child(4)')?.textContent.toLowerCase() || '';
+                
+                if (name.includes(searchTerm) || category.includes(searchTerm) || price.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
 });

@@ -4,33 +4,399 @@
 <div class="admin-container">
     <h1 class="mb-4">Gestione Menu</h1>
 
+    <!-- Add Product Form -->
+    <div class="card mb-4">
+        <div class="card-header" id="productManagementHeader">
+            <h5 class="mb-0">
+                <button class="btn btn-link w-100 text-start text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#productManagementContent" aria-expanded="true" aria-controls="productManagementContent">
+                    <i class="fas fa-chevron-down me-2"></i> Gestione Prodotti
+                </button>
+            </h5>
+        </div>
+        <div id="productManagementContent" class="collapse show" aria-labelledby="productManagementHeader">
+            <div class="card-body">
+                <form action="{{ url_for('add_product') }}" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Prezzo</label>
+                            <input type="number" class="form-control" id="price" name="price" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrizione</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price_2_label" class="form-label">Etichetta Secondo Prezzo (es. "Bottiglia")</label>
+                            <input type="text" class="form-control" id="price_2_label" name="price_2_label">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="price_2" class="form-label">Secondo Prezzo (opzionale)</label>
+                            <input type="number" class="form-control" id="price_2" name="price_2" step="0.01">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categorie</label>
+                            <div class="border rounded p-3 category-selection-container">
+                                {% for category in all_categories %}
+                                <div class="form-check">
+                                    <input class="form-check-input category-checkbox" type="checkbox" name="category_ids[]" value="{{ category.id }}" id="category_{{ category.id }}">
+                                    <label class="form-check-label" for="category_{{ category.id }}">
+                                        {% if category.parent %}
+                                            {{ category.parent.name }} → {{ category.name }}
+                                        {% else %}
+                                            {{ category.name }}
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="form-text text-muted">Seleziona una o più categorie. La prima categoria selezionata sarà quella principale.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="image_url" class="form-label">Immagine</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="image_url" name="image_url">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#imagePickerModal">
+                                    <i class="fas fa-images me-1"></i> Scegli
+                                </button>
+                            </div>
+                            <div class="mt-2" id="imagePreview"></div>
+                        </div>
+                        
+                        <!-- Modal per selezionare le immagini -->
+                        <div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="imagePickerModalLabel">Seleziona un'immagine</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="text-center mb-3 image-loader">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Caricamento...</span>
+                                            </div>
+                                            <p>Caricamento immagini...</p>
+                                        </div>
+                                        <div class="row image-gallery"></div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Allergeni</label>
+                            <div id="allergensContainer" class="border rounded p-3">
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_glutine" value="Glutine">
+                                            <label class="form-check-label" for="allergen_glutine">Glutine</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_crostacei" value="Crostacei">
+                                            <label class="form-check-label" for="allergen_crostacei">Crostacei</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_uova" value="Uova">
+                                            <label class="form-check-label" for="allergen_uova">Uova</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_pesce" value="Pesce">
+                                            <label class="form-check-label" for="allergen_pesce">Pesce</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_arachidi" value="Arachidi">
+                                            <label class="form-check-label" for="allergen_arachidi">Arachidi</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_soia" value="Soia">
+                                            <label class="form-check-label" for="allergen_soia">Soia</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_latte" value="Latte">
+                                            <label class="form-check-label" for="allergen_latte">Latte</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_frutta" value="Frutta a guscio">
+                                            <label class="form-check-label" for="allergen_frutta">Frutta a guscio</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sedano" value="Sedano">
+                                            <label class="form-check-label" for="allergen_sedano">Sedano</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_senape" value="Senape">
+                                            <label class="form-check-label" for="allergen_senape">Senape</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sesamo" value="Semi di sesamo">
+                                            <label class="form-check-label" for="allergen_sesamo">Semi di sesamo</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_lupini" value="Lupini">
+                                            <label class="form-check-label" for="allergen_lupini">Lupini</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_molluschi" value="Molluschi">
+                                            <label class="form-check-label" for="allergen_molluschi">Molluschi</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_anidride" value="Anidride solforosa">
+                                            <label class="form-check-label" for="allergen_anidride">Anidride solforosa</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Campo nascosto che conterrà gli allergeni selezionati -->
+                                <input type="hidden" name="allergens" id="allergens_input">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tags" class="form-label">Tag Prodotto</label>
+                            <div class="tag-container border rounded p-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegano" value="vegano">
+                                    <label class="form-check-label" for="tag_vegano">Vegano</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegetariano" value="vegetariano">
+                                    <label class="form-check-label" for="tag_vegetariano">Vegetariano</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_piccante" value="piccante">
+                                    <label class="form-check-label" for="tag_piccante">Piccante</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_glutenfree" value="gluten-free">
+                                    <label class="form-check-label" for="tag_glutenfree">Senza Glutine</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input tag-checkbox" type="checkbox" id="tag_bio" value="bio">
+                                    <label class="form-check-label" for="tag_bio">Biologico</label>
+                                </div>
+                                
+                                <!-- Campo nascosto che conterrà i tag selezionati -->
+                                <input type="hidden" name="tags" id="tags_input">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_available" name="is_available" checked>
+                                <label class="form-check-label" for="is_available">
+                                    Prodotto disponibile
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                                <label class="form-check-label" for="is_featured">
+                                    Prodotto in evidenza
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Aggiungi Prodotto</button>
+                    
+                    <!-- Script per gestire i tag e gli allergeni -->
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Aggiorna il campo nascosto quando si selezionano i tag
+                            const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
+                            const tagsInput = document.getElementById('tags_input');
+                            
+                            function updateTagsInput() {
+                                const selectedTags = Array.from(tagCheckboxes)
+                                    .filter(checkbox => checkbox.checked)
+                                    .map(checkbox => checkbox.value);
+                                
+                                tagsInput.value = selectedTags.join(',');
+                            }
+                            
+                            // Inizializza il campo
+                            updateTagsInput();
+                            
+                            // Aggiorna quando cambia una selezione
+                            tagCheckboxes.forEach(checkbox => {
+                                checkbox.addEventListener('change', updateTagsInput);
+                            });
+                            
+                            // Gestione allergeni
+                            const allergenCheckboxes = document.querySelectorAll('.allergen-checkbox');
+                            const allergensInput = document.getElementById('allergens_input');
+                            
+                            function updateAllergensInput() {
+                                const selectedAllergens = Array.from(allergenCheckboxes)
+                                    .filter(checkbox => checkbox.checked)
+                                    .map(checkbox => checkbox.value);
+                                
+                                allergensInput.value = selectedAllergens.join(', ');
+                            }
+                            
+                            // Inizializza il campo degli allergeni
+                            updateAllergensInput();
+                            
+                            // Aggiorna quando cambia una selezione degli allergeni
+                            allergenCheckboxes.forEach(checkbox => {
+                                checkbox.addEventListener('change', updateAllergensInput);
+                            });
+                            
+                            // Gestione selezione immagini
+                            const imageUrl = document.getElementById('image_url');
+                            const imagePreview = document.getElementById('imagePreview');
+                            const imageGallery = document.querySelector('.image-gallery');
+                            const imageLoader = document.querySelector('.image-loader');
+                            const imagePickerModal = document.getElementById('imagePickerModal');
+                            
+                            // Aggiorna anteprima quando cambia l'URL dell'immagine
+                            imageUrl.addEventListener('change', updateImagePreview);
+                            
+                            function updateImagePreview() {
+                                const url = imageUrl.value.trim();
+                                if (url) {
+                                    imagePreview.innerHTML = `<img src="${url}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">`;
+                                } else {
+                                    imagePreview.innerHTML = '';
+                                }
+                            }
+                            
+                            // Carica le immagini quando si apre il modal
+                            imagePickerModal.addEventListener('show.bs.modal', loadImages);
+                            
+                            function loadImages() {
+                                // Mostra il loader
+                                imageLoader.style.display = 'block';
+                                imageGallery.innerHTML = '';
+                                
+                                // Richiedi le immagini all'API
+                                fetch('/api/images')
+                                    .then(response => response.json())
+                                    .then(images => {
+                                        // Nascondi il loader
+                                        imageLoader.style.display = 'none';
+                                        
+                                        // Visualizza le immagini
+                                        if (images.length === 0) {
+                                            imageGallery.innerHTML = '<div class="col-12 text-center">Nessuna immagine trovata</div>';
+                                            return;
+                                        }
+                                        
+                                        images.forEach(image => {
+                                            const col = document.createElement('div');
+                                            col.className = 'col-md-3 col-sm-4 col-6 mb-3';
+                                            
+                                            col.innerHTML = `
+                                                <div class="card image-card h-100">
+                                                    <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 100px; object-fit: cover;">
+                                                    <div class="card-body p-2">
+                                                        <p class="card-text small text-truncate">${image.name}</p>
+                                                        <button type="button" class="btn btn-sm btn-primary w-100 select-image">Seleziona</button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                            
+                                            // Aggiungi event listener al pulsante Seleziona
+                                            const selectButton = col.querySelector('.select-image');
+                                            selectButton.addEventListener('click', function() {
+                                                imageUrl.value = image.url;
+                                                updateImagePreview();
+                                                
+                                                // Chiudi il modal
+                                                const modal = bootstrap.Modal.getInstance(imagePickerModal);
+                                                modal.hide();
+                                            });
+                                            
+                                            imageGallery.appendChild(col);
+                                        });
+                                    })
+                                    .catch(error => {
+                                        console.error('Errore nel caricamento delle immagini:', error);
+                                        imageLoader.style.display = 'none';
+                                        imageGallery.innerHTML = '<div class="col-12 text-center text-danger">Errore nel caricamento delle immagini</div>';
+                                    });
+                            }
+                        });
+                    </script>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Category Management -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Gestione Categorie</h5>
+        <div class="card-header" id="categoryManagementHeader">
+            <h5 class="mb-0">
+                <button class="btn btn-link w-100 text-start text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#categoryManagementContent" aria-expanded="true" aria-controls="categoryManagementContent">
+                    <i class="fas fa-chevron-down me-2"></i> Gestione Categorie
+                </button>
+            </h5>
         </div>
-        <div class="card-body">
-            <!-- Add Category Form -->
-            <form action="{{ url_for('add_category') }}" method="POST" class="mb-4">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label for="category_name" class="form-label">Nome Categoria</label>
-                        <input type="text" class="form-control" id="category_name" name="name" required>
+        <div id="categoryManagementContent" class="collapse show" aria-labelledby="categoryManagementHeader">
+            <div class="card-body">
+                <!-- Add Category Form -->
+                <form action="{{ url_for('add_category') }}" method="POST" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="category_name" class="form-label">Nome Categoria</label>
+                            <input type="text" class="form-control" id="category_name" name="name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="parent_category" class="form-label">Categoria Padre (opzionale)</label>
+                            <select class="form-select" id="parent_category" name="parent_id" multiple>
+                                <option value="">Nessuna (Categoria Principale)</option>
+                                {% for category in all_categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Tieni premuto Ctrl/Cmd per selezionare più categorie</small>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Aggiungi Categoria</button>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label for="parent_category" class="form-label">Categoria Padre (opzionale)</label>
-                        <select class="form-select" id="parent_category" name="parent_id">
-                            <option value="">Nessuna (Categoria Principale)</option>
-                            {% for category in all_categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary">Aggiungi Categoria</button>
-                    </div>
-                </div>
-            </form>
+                </form>
 
             <!-- Categories List -->
             <div class="table-responsive">
@@ -52,8 +418,8 @@
                         <tr data-id="{{ category.id }}" class="sortable-row" data-parent-id="{{ category.parent_id or 'none' }}">
                             <td class="handle" style="cursor:grab; padding:10px;"><i class="fas fa-grip-vertical text-muted"></i></td>
                             <td>{{ category.name }}</td>
-                            <td>{% if category.parent_id %}Sottocategoria{% else %}Categoria Principale{% endif %}</td>
-                            <td>{{ category.parent.name if category.parent else '-' }}</td>
+                            <td>{% if category.is_subcategory() %}Sottocategoria{% else %}Categoria Principale{% endif %}</td>
+                            <td>{% for parent in category.parents %}{{ parent.name }}{% if not loop.last %}, {% endif %}{% else %}-{% endfor %}</td>
                             <td>
                                 <a href="{{ url_for('edit_category', category_id=category.id) }}" 
                                    class="btn btn-sm btn-warning">
@@ -73,405 +439,143 @@
         </div>
     </div>
 
-    <!-- Add Product Form -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Aggiungi Nuovo Prodotto</h5>
-        </div>
-        <div class="card-body">
-            <form action="{{ url_for('add_product') }}" method="POST">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="name" class="form-label">Nome</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="price" class="form-label">Prezzo</label>
-                        <input type="number" class="form-control" id="price" name="price" step="0.01" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Descrizione</label>
-                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="price_2_label" class="form-label">Etichetta Secondo Prezzo (es. "Bottiglia")</label>
-                        <input type="text" class="form-control" id="price_2_label" name="price_2_label">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="price_2" class="form-label">Secondo Prezzo (opzionale)</label>
-                        <input type="number" class="form-control" id="price_2" name="price_2" step="0.01">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="category_id" class="form-label">Categoria</label>
-                        <select class="form-select" id="category_id" name="category_id" required>
-                            {% for category in all_categories %}
-                            <option value="{{ category.id }}">
-                                {% if category.parent %}
-                                    {{ category.parent.name }} → {{ category.name }}
-                                {% else %}
-                                    {{ category.name }}
-                                {% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="image_url" class="form-label">Immagine</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="image_url" name="image_url">
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#imagePickerModal">
-                                <i class="fas fa-images me-1"></i> Scegli
-                            </button>
-                        </div>
-                        <div class="mt-2" id="imagePreview"></div>
-                    </div>
-                    
-                    <!-- Modal per selezionare le immagini -->
-                    <div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="imagePickerModalLabel">Seleziona un'immagine</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="text-center mb-3 image-loader">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Caricamento...</span>
-                                        </div>
-                                        <p>Caricamento immagini...</p>
-                                    </div>
-                                    <div class="row image-gallery"></div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Allergeni</label>
-                        <div id="allergensContainer" class="border rounded p-3">
-                            <div class="row">
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_glutine" value="Glutine">
-                                        <label class="form-check-label" for="allergen_glutine">Glutine</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_crostacei" value="Crostacei">
-                                        <label class="form-check-label" for="allergen_crostacei">Crostacei</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_uova" value="Uova">
-                                        <label class="form-check-label" for="allergen_uova">Uova</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_pesce" value="Pesce">
-                                        <label class="form-check-label" for="allergen_pesce">Pesce</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_arachidi" value="Arachidi">
-                                        <label class="form-check-label" for="allergen_arachidi">Arachidi</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_soia" value="Soia">
-                                        <label class="form-check-label" for="allergen_soia">Soia</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_latte" value="Latte">
-                                        <label class="form-check-label" for="allergen_latte">Latte</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_frutta" value="Frutta a guscio">
-                                        <label class="form-check-label" for="allergen_frutta">Frutta a guscio</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sedano" value="Sedano">
-                                        <label class="form-check-label" for="allergen_sedano">Sedano</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_senape" value="Senape">
-                                        <label class="form-check-label" for="allergen_senape">Senape</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_sesamo" value="Semi di sesamo">
-                                        <label class="form-check-label" for="allergen_sesamo">Semi di sesamo</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_lupini" value="Lupini">
-                                        <label class="form-check-label" for="allergen_lupini">Lupini</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_molluschi" value="Molluschi">
-                                        <label class="form-check-label" for="allergen_molluschi">Molluschi</label>
-                                    </div>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input allergen-checkbox" type="checkbox" id="allergen_anidride" value="Anidride solforosa">
-                                        <label class="form-check-label" for="allergen_anidride">Anidride solforosa</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Campo nascosto che conterrà gli allergeni selezionati -->
-                            <input type="hidden" name="allergens" id="allergens_input">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="tags" class="form-label">Tag Prodotto</label>
-                        <div class="tag-container border rounded p-2">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegano" value="vegano">
-                                <label class="form-check-label" for="tag_vegano">Vegano</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input tag-checkbox" type="checkbox" id="tag_vegetariano" value="vegetariano">
-                                <label class="form-check-label" for="tag_vegetariano">Vegetariano</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input tag-checkbox" type="checkbox" id="tag_piccante" value="piccante">
-                                <label class="form-check-label" for="tag_piccante">Piccante</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input tag-checkbox" type="checkbox" id="tag_glutenfree" value="gluten-free">
-                                <label class="form-check-label" for="tag_glutenfree">Senza Glutine</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input tag-checkbox" type="checkbox" id="tag_bio" value="bio">
-                                <label class="form-check-label" for="tag_bio">Biologico</label>
-                            </div>
-                            
-                            <!-- Campo nascosto che conterrà i tag selezionati -->
-                            <input type="hidden" name="tags" id="tags_input">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="is_available" name="is_available" checked>
-                            <label class="form-check-label" for="is_available">
-                                Prodotto disponibile
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
-                            <label class="form-check-label" for="is_featured">
-                                Prodotto in evidenza
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Aggiungi Prodotto</button>
-                
-                <!-- Script per gestire i tag e gli allergeni -->
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Aggiorna il campo nascosto quando si selezionano i tag
-                        const tagCheckboxes = document.querySelectorAll('.tag-checkbox');
-                        const tagsInput = document.getElementById('tags_input');
-                        
-                        function updateTagsInput() {
-                            const selectedTags = Array.from(tagCheckboxes)
-                                .filter(checkbox => checkbox.checked)
-                                .map(checkbox => checkbox.value);
-                            
-                            tagsInput.value = selectedTags.join(',');
-                        }
-                        
-                        // Inizializza il campo
-                        updateTagsInput();
-                        
-                        // Aggiorna quando cambia una selezione
-                        tagCheckboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', updateTagsInput);
-                        });
-                        
-                        // Gestione allergeni
-                        const allergenCheckboxes = document.querySelectorAll('.allergen-checkbox');
-                        const allergensInput = document.getElementById('allergens_input');
-                        
-                        function updateAllergensInput() {
-                            const selectedAllergens = Array.from(allergenCheckboxes)
-                                .filter(checkbox => checkbox.checked)
-                                .map(checkbox => checkbox.value);
-                            
-                            allergensInput.value = selectedAllergens.join(', ');
-                        }
-                        
-                        // Inizializza il campo degli allergeni
-                        updateAllergensInput();
-                        
-                        // Aggiorna quando cambia una selezione degli allergeni
-                        allergenCheckboxes.forEach(checkbox => {
-                            checkbox.addEventListener('change', updateAllergensInput);
-                        });
-                        
-                        // Gestione selezione immagini
-                        const imageUrl = document.getElementById('image_url');
-                        const imagePreview = document.getElementById('imagePreview');
-                        const imageGallery = document.querySelector('.image-gallery');
-                        const imageLoader = document.querySelector('.image-loader');
-                        const imagePickerModal = document.getElementById('imagePickerModal');
-                        
-                        // Aggiorna anteprima quando cambia l'URL dell'immagine
-                        imageUrl.addEventListener('change', updateImagePreview);
-                        
-                        function updateImagePreview() {
-                            const url = imageUrl.value.trim();
-                            if (url) {
-                                imagePreview.innerHTML = `<img src="${url}" alt="Anteprima" class="img-thumbnail" style="max-height: 100px;">`;
-                            } else {
-                                imagePreview.innerHTML = '';
-                            }
-                        }
-                        
-                        // Carica le immagini quando si apre il modal
-                        imagePickerModal.addEventListener('show.bs.modal', loadImages);
-                        
-                        function loadImages() {
-                            // Mostra il loader
-                            imageLoader.style.display = 'block';
-                            imageGallery.innerHTML = '';
-                            
-                            // Richiedi le immagini all'API
-                            fetch('/api/images')
-                                .then(response => response.json())
-                                .then(images => {
-                                    // Nascondi il loader
-                                    imageLoader.style.display = 'none';
-                                    
-                                    // Visualizza le immagini
-                                    if (images.length === 0) {
-                                        imageGallery.innerHTML = '<div class="col-12 text-center">Nessuna immagine trovata</div>';
-                                        return;
-                                    }
-                                    
-                                    images.forEach(image => {
-                                        const col = document.createElement('div');
-                                        col.className = 'col-md-3 col-sm-4 col-6 mb-3';
-                                        
-                                        col.innerHTML = `
-                                            <div class="card image-card h-100">
-                                                <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 100px; object-fit: cover;">
-                                                <div class="card-body p-2">
-                                                    <p class="card-text small text-truncate">${image.name}</p>
-                                                    <button type="button" class="btn btn-sm btn-primary w-100 select-image">Seleziona</button>
-                                                </div>
-                                            </div>
-                                        `;
-                                        
-                                        // Aggiungi event listener al pulsante Seleziona
-                                        const selectButton = col.querySelector('.select-image');
-                                        selectButton.addEventListener('click', function() {
-                                            imageUrl.value = image.url;
-                                            updateImagePreview();
-                                            
-                                            // Chiudi il modal
-                                            const modal = bootstrap.Modal.getInstance(imagePickerModal);
-                                            modal.hide();
-                                        });
-                                        
-                                        imageGallery.appendChild(col);
-                                    });
-                                })
-                                .catch(error => {
-                                    console.error('Errore nel caricamento delle immagini:', error);
-                                    imageLoader.style.display = 'none';
-                                    imageGallery.innerHTML = '<div class="col-12 text-center text-danger">Errore nel caricamento delle immagini</div>';
-                                });
-                        }
-                    });
-                </script>
-            </form>
-        </div>
-    </div>
-
-    <!-- Products List -->
+    <!-- Products List Grouped by Category -->
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Prodotti Esistenti</h5>
+            <h5 class="mb-0">Prodotti Esistenti per Categoria</h5>
         </div>
         <div class="card-body">
             <div class="alert alert-info mb-3">
-                <i class="fas fa-info-circle me-2"></i> Trascina le righe per riordinare i prodotti all'interno della stessa categoria
+                <i class="fas fa-info-circle me-2"></i> Clicca su una categoria per espandere/comprimere i suoi prodotti. Trascina le righe per riordinare i prodotti all'interno della stessa categoria
             </div>
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 45px;">#</th>
-                            <th>Nome</th>
-                            <th>Categoria</th>
-                            <th>Prezzo</th>
-                            <th>Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsSortable">
-                        {% for product in products %}
-                        <tr data-id="{{ product.id }}" class="sortable-row" data-category-id="{{ product.category_id }}">
-                            <td class="handle" style="cursor:grab; padding:10px;"><i class="fas fa-grip-vertical text-muted"></i></td>
-                            <td>{{ product.name }}</td>
-                            <td>
-                                {% if product.category.parent %}
-                                    {{ product.category.parent.name }} → {{ product.category.name }}
-                                {% else %}
-                                    {{ product.category.name }}
-                                {% endif %}
-                            </td>
-                            <td>€ {{ "%.2f"|format(product.price) }}
-                                {% if product.price_2 %}
-                                    | {{ product.price_2_label }}: € {{ "%.2f"|format(product.price_2) }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm btn-warning">
-                                    Modifica
-                                </a>
-                                <a href="{{ url_for('delete_product', product_id=product.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Sei sicuro di voler eliminare questo prodotto?')">
-                                    Elimina
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Search Bar for Products -->
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="productSearchInput" class="form-control" placeholder="Cerca prodotti per nome, categoria o prezzo...">
+                </div>
+            </div>
+            
+            <!-- Accordion for Categories -->
+            <div class="accordion" id="categoriesAccordion">
+                {% for category in all_categories if not category.parent %}
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header" id="heading{{ category.id }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ category.id }}" aria-expanded="false" aria-controls="collapse{{ category.id }}">
+                            <strong>{{ category.name }}</strong>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ category.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ category.id }}" data-bs-parent="#categoriesAccordion">
+                        <div class="accordion-body p-0">
+                            <!-- Products Table for Main Category -->
+                            <div class="table-responsive">
+                                <table class="table table-striped mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 45px;">#</th>
+                                            <th>Nome</th>
+                                            <th>Prezzo</th>
+                                            <th>Stato</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="category-products-sortable" data-category-id="{{ category.id }}">
+                                        {% for product in products if product.category_id == category.id %}
+                                        <tr data-id="{{ product.id }}" class="sortable-row" data-category-id="{{ product.category_id }}">
+                                            <td class="handle" style="cursor:grab; padding:10px;"><i class="fas fa-grip-vertical text-muted"></i></td>
+                                            <td>{{ product.name }}</td>
+                                            <td>€ {{ "%.2f"|format(product.price) }}
+                                                {% if product.price_2 %}
+                                                    | {{ product.price_2_label }}: € {{ "%.2f"|format(product.price_2) }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if product.is_available %}
+                                                    <span class="badge bg-success">Disponibile</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Non disponibile</span>
+                                                {% endif %}
+                                                {% if product.is_featured %}
+                                                    <span class="badge bg-warning text-dark">In evidenza</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm btn-warning">
+                                                    Modifica
+                                                </a>
+                                                <a href="{{ url_for('delete_product', product_id=product.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Sei sicuro di voler eliminare questo prodotto?')">
+                                                    Elimina
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- If category has subcategories -->
+                            {% set subcategories = all_categories|selectattr('parent_id', 'equalto', category.id)|list %}
+                            {% if subcategories|length > 0 %}
+                            <div class="mt-3 p-3 bg-light">
+                                <h6 class="mb-3">Sottocategorie di {{ category.name }}</h6>
+                                
+                                {% for subcategory in subcategories %}
+                                <div class="card mb-3">
+                                    <div class="card-header bg-secondary text-white py-2">
+                                        <strong>{{ subcategory.name }}</strong>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 45px;">#</th>
+                                                    <th>Nome</th>
+                                                    <th>Prezzo</th>
+                                                    <th>Stato</th>
+                                                    <th>Azioni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="category-products-sortable" data-category-id="{{ subcategory.id }}">
+                                                {% for product in products if product.category_id == subcategory.id %}
+                                                <tr data-id="{{ product.id }}" class="sortable-row" data-category-id="{{ product.category_id }}">
+                                                    <td class="handle" style="cursor:grab; padding:10px;"><i class="fas fa-grip-vertical text-muted"></i></td>
+                                                    <td>{{ product.name }}</td>
+                                                    <td>€ {{ "%.2f"|format(product.price) }}
+                                                        {% if product.price_2 %}
+                                                            | {{ product.price_2_label }}: € {{ "%.2f"|format(product.price_2) }}
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if product.is_available %}
+                                                            <span class="badge bg-success">Disponibile</span>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">Non disponibile</span>
+                                                        {% endif %}
+                                                        {% if product.is_featured %}
+                                                            <span class="badge bg-warning text-dark">In evidenza</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-sm btn-warning">
+                                                            Modifica
+                                                        </a>
+                                                        <a href="{{ url_for('delete_product', product_id=product.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Sei sicuro di voler eliminare questo prodotto?')">
+                                                            Elimina
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -482,6 +586,54 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Debug per verificare gli elementi della pagina
             console.log("Initializing Sortable.js");
+            
+            // Filter functionality for products
+            const productSearchInput = document.getElementById('productSearchInput');
+            if (productSearchInput) {
+                productSearchInput.addEventListener('input', function() {
+                    const searchValue = this.value.toLowerCase();
+                    const accordionItems = document.querySelectorAll('#categoriesAccordion .accordion-item');
+                    
+                    accordionItems.forEach(item => {
+                        const categoryButton = item.querySelector('.accordion-button');
+                        const categoryName = categoryButton.innerText.toLowerCase();
+                        const categoryCollapse = item.querySelector('.accordion-collapse');
+                        const productRows = item.querySelectorAll('tbody tr');
+                        
+                        let hasVisibleProducts = false;
+                        
+                        productRows.forEach(row => {
+                            const productName = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+                            const productPrice = row.querySelector('td:nth-child(3)').innerText.toLowerCase();
+                            
+                            if (productName.includes(searchValue) || productPrice.includes(searchValue) || categoryName.includes(searchValue)) {
+                                row.style.display = '';
+                                hasVisibleProducts = true;
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                        
+                        if (searchValue && hasVisibleProducts) {
+                            // Show category and expand
+                            item.style.display = '';
+                            if (categoryCollapse.classList.contains('collapse')) {
+                                categoryButton.classList.remove('collapsed');
+                                categoryCollapse.classList.add('show');
+                            }
+                        } else if (searchValue) {
+                            // Hide category if no matching products
+                            item.style.display = 'none';
+                        } else {
+                            // Reset to default state
+                            item.style.display = '';
+                            if (!categoryCollapse.classList.contains('show')) {
+                                categoryButton.classList.add('collapsed');
+                            }
+                        }
+                    });
+                });
+            }
             
             // Gestione ordinamento categorie
             const categoriesSortable = document.getElementById('categoriesSortable');
@@ -510,46 +662,24 @@
                 console.log("Category Sortable initialized");
             }
             
-            // Gestione ordinamento prodotti
-            const productsSortable = document.getElementById('productsSortable');
-            console.log("Products container:", productsSortable);
-            
-            if (productsSortable) {
-                console.log("Numero di righe di prodotti:", productsSortable.querySelectorAll('tr').length);
-                
-                const productSort = new Sortable(productsSortable, {
+            // Inizializza Sortable.js per ogni categoria di prodotti
+            const productTables = document.querySelectorAll('.category-products-sortable');
+            productTables.forEach(table => {
+                new Sortable(table, {
                     handle: '.handle',
                     animation: 150,
                     draggable: 'tr',
                     ghostClass: 'sortable-ghost',
                     chosenClass: 'sortable-chosen',
-                    forceFallback: true,  // Usa il fallback per evitare problemi in alcuni browser
+                    forceFallback: true,
                     fallbackOnBody: true,
-                    onStart: function(evt) {
-                        console.log("Product drag started", evt.item);
-                    },
                     onEnd: function(evt) {
-                        console.log("Product drag ended", evt.item);
-                        // Verifica che il prodotto rimanga nella stessa categoria
-                        const item = evt.item;
-                        const previousEl = evt.item.previousElementSibling;
-                        
-                        const itemCategoryId = item.getAttribute('data-category-id');
-                        // Se l'elemento è stato spostato ma esistono elementi precedenti, verifica la categoria
-                        if (previousEl && previousEl.getAttribute('data-category-id') !== itemCategoryId) {
-                            // Visualizza un messaggio all'utente
-                            alert('I prodotti possono essere riordinati solo all\'interno della stessa categoria');
-                            // La pagina si ricaricherà per ripristinare l'ordine originale
-                            location.reload();
-                            return;
-                        }
-                        
-                        saveNewProductOrder();
+                        saveProductOrderInCategory(table.getAttribute('data-category-id'));
                     }
                 });
                 
-                console.log("Product Sortable initialized");
-            }
+                console.log("Product Sortable initialized for category-id:", table.getAttribute('data-category-id'));
+            });
             
             // Funzione per salvare l'ordine delle categorie
             function saveNewCategoryOrder() {
@@ -569,20 +699,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Mostra notifica di successo
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
-                        alertDiv.role = 'alert';
-                        alertDiv.innerHTML = `
-                            <strong>Successo!</strong> L'ordine delle categorie è stato aggiornato.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        `;
-                        document.body.appendChild(alertDiv);
-                        
-                        // Rimuovi l'alert dopo alcuni secondi
-                        setTimeout(() => {
-                            alertDiv.remove();
-                        }, 3000);
+                        showSuccessAlert('L\'ordine delle categorie è stato aggiornato.');
                     } else {
                         console.error('Errore durante il salvataggio dell\'ordine');
                     }
@@ -592,61 +709,49 @@
                 });
             }
             
-            // Funzione per salvare l'ordine dei prodotti
-            function saveNewProductOrder() {
-                const productRows = document.querySelectorAll('#productsSortable tr.sortable-row');
+            // Funzione per salvare l'ordine dei prodotti all'interno di una categoria
+            function saveProductOrderInCategory(categoryId) {
+                const productRows = document.querySelectorAll(`.category-products-sortable[data-category-id="${categoryId}"] tr.sortable-row`);
+                const productIds = Array.from(productRows).map(row => parseInt(row.getAttribute('data-id')));
                 
-                // Raggruppa i prodotti per categoria
-                const productsByCategory = {};
-                
-                productRows.forEach(row => {
-                    const productId = parseInt(row.getAttribute('data-id'));
-                    const categoryId = parseInt(row.getAttribute('data-category-id'));
-                    
-                    if (!productsByCategory[categoryId]) {
-                        productsByCategory[categoryId] = [];
+                fetch('/api/reorder-products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        category_id: parseInt(categoryId),
+                        products: productIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessAlert('L\'ordine dei prodotti è stato aggiornato.');
+                    } else {
+                        console.error('Errore durante il salvataggio dell\'ordine dei prodotti');
                     }
-                    
-                    productsByCategory[categoryId].push(productId);
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
                 });
+            }
+            
+            // Helper per mostrare alert di successo
+            function showSuccessAlert(message) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
+                alertDiv.role = 'alert';
+                alertDiv.innerHTML = `
+                    <strong>Successo!</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.body.appendChild(alertDiv);
                 
-                // Per ogni categoria, invia una richiesta separata
-                Object.keys(productsByCategory).forEach(categoryId => {
-                    fetch('/api/reorder-products', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            category_id: parseInt(categoryId),
-                            products: productsByCategory[categoryId]
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Mostra notifica di successo
-                            const alertDiv = document.createElement('div');
-                            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
-                            alertDiv.role = 'alert';
-                            alertDiv.innerHTML = `
-                                <strong>Successo!</strong> L'ordine dei prodotti è stato aggiornato.
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            `;
-                            document.body.appendChild(alertDiv);
-                            
-                            // Rimuovi l'alert dopo alcuni secondi
-                            setTimeout(() => {
-                                alertDiv.remove();
-                            }, 3000);
-                        } else {
-                            console.error('Errore durante il salvataggio dell\'ordine dei prodotti');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Errore:', error);
-                    });
-                });
+                // Rimuovi l'alert dopo alcuni secondi
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 3000);
             }
         });
     </script>

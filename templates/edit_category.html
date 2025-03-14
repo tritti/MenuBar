@@ -16,17 +16,17 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="parent_id" class="form-label">Categoria Principale</label>
-                            <select class="form-select" id="parent_id" name="parent_id">
-                                <option value="">Nessuna (categoria principale)</option>
+                            <label for="parent_categories" class="form-label">Categorie Principali</label>
+                            <select class="form-select" id="parent_categories" name="parent_ids" multiple>
                                 {% for parent in main_categories %}
                                     {% if parent.id != category.id %}
-                                    <option value="{{ parent.id }}" {% if parent.id == category.parent_id %}selected{% endif %}>
+                                    <option value="{{ parent.id }}" {% if parent in category.parents %}selected{% endif %}>
                                         {{ parent.name }}
                                     </option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
+                            <small class="form-text text-muted">Tieni premuto Ctrl/Cmd per selezionare più categorie</small>
                         </div>
                         
                         <div class="mb-3">

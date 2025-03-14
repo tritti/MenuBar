@@ -10,7 +10,9 @@ import secrets
 from sqlalchemy_utils import URLType
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(16)  # Genera una chiave segreta casuale
+# Usa una chiave fissa per la produzione o caricala da una variabile d'ambiente
+# In questo modo la chiave non cambia a ogni riavvio del server
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'ilcaffedellapiazzapanicalekey'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///menu.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -30,17 +32,27 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True)
     last_login = db.Column(db.DateTime)
 
+# Association table for category relationships
+category_relationships = db.Table('category_relationships',
+    db.Column('parent_category_id', db.Integer, db.ForeignKey('category.id'), primary_key=True),
+    db.Column('child_category_id', db.Integer, db.ForeignKey('category.id'), primary_key=True)
+)
+
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
     products = db.relationship('Product', backref='category', lazy=True)
-    children = db.relationship('Category',
-                             backref=db.backref('parent', remote_side=[id]),
-                             lazy='dynamic')
     position = db.Column(db.Integer, default=0)  # Per ordinare le categorie
     is_active = db.Column(db.Boolean, default=True)  # Per nascondere temporaneamente categorie
     icon = db.Column(db.String(100))  # URL icona per la categoria
+    
+    # Relazione many-to-many per le categorie padre
+    parents = db.relationship('Category',
+                            secondary=category_relationships,
+                            primaryjoin=(id == category_relationships.c.child_category_id),
+                            secondaryjoin=(id == category_relationships.c.parent_category_id),
+                            backref=db.backref('children', lazy='dynamic'),
+                            lazy='dynamic')
     
     # Campi per l'attivazione automatica
     auto_activate = db.Column(db.Boolean, default=False)  # Attiva/disattiva automazione
@@ -52,10 +64,10 @@ class Category(db.Model):
         return self.children.filter_by(is_active=True).order_by(Category.position).all()
 
     def is_subcategory(self):
-        return self.parent_id is not None
+        return self.parents.count() > 0
         
     def active_products(self):
-        return [p for p in self.products if p.is_available]
+        return [p for p in self.all_products.filter_by(is_available=True).all()]
         
     def should_be_active(self):
         """Verifica se la categoria dovrebbe essere attiva in base ai criteri di automazione"""
@@ -77,6 +89,12 @@ class Category(db.Model):
         # Verifica se l'ora corrente è nell'intervallo attivo
         return self.active_start_time <= current_time <= self.active_end_time
 
+# Association table for product-category many-to-many relationship
+product_categories = db.Table('product_categories',
+    db.Column('product_id', db.Integer, db.ForeignKey('product.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('category_id', db.Integer, db.ForeignKey('category.id', ondelete='CASCADE'), primary_key=True)
+)
+
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
@@ -84,7 +102,9 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     price_2 = db.Column(db.Float)  # Secondo prezzo opzionale
     price_2_label = db.Column(db.String(20))  # Etichetta per il secondo prezzo
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))  # Primary category
+    categories = db.relationship('Category', secondary=product_categories, 
+                               backref=db.backref('all_products', lazy='dynamic'))
     image_url = db.Column(db.String(200))
     is_available = db.Column(db.Boolean, default=True)  # Per gestire disponibilità
     is_featured = db.Column(db.Boolean, default=False)  # Per prodotti in evidenza
@@ -127,7 +147,7 @@ def index():
     
     # Get main categories for the template - solo categorie attive, ordinate per posizione
     main_categories = Category.query.filter(
-        Category.parent_id.is_(None),
+        ~Category.parents.any(),
         Category.is_active == True
     ).order_by(Category.position).all()
     
@@ -170,13 +190,23 @@ def update_auto_activate_categories():
 @app.route('/admin')
 @login_required
 def admin():
+    print("\n=== ADMIN DEBUG ===")
+    print("User authenticated:", current_user.is_authenticated)
+    print("User:", current_user)
+    
     # Aggiorna lo stato delle categorie automatiche
     update_auto_activate_categories()
     
     products = Product.query.order_by(Product.category_id, Product.position).all()
-    main_categories = Category.query.filter_by(parent_id=None).order_by(Category.position).all()
-    all_categories = Category.query.order_by(Category.parent_id, Category.position).all()
+    main_categories = Category.query.filter(~Category.parents.any()).order_by(Category.position).all()
+    all_categories = Category.query.order_by(Category.position).all()
+    
+    # Get theme preferences
     theme = ThemePreference.query.first()
+    if not theme:
+        theme = ThemePreference()
+        db.session.add(theme)
+        db.session.commit()
     
     # Conta prodotti non disponibili
     unavailable_count = Product.query.filter_by(is_available=False).count()
@@ -185,11 +215,13 @@ def admin():
     # Conta categorie con attivazione automatica
     auto_categories = Category.query.filter_by(auto_activate=True).count()
     
+    print("Rendering admin template")
+    
     return render_template('admin.html', 
                           products=products, 
                           main_categories=main_categories, 
                           all_categories=all_categories,
-                          theme=theme,
+                          theme=theme,  # Make sure theme is passed to template
                           stats={
                               'product_count': len(products),
                               'category_count': len(all_categories),
@@ -200,20 +232,37 @@ def admin():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("\n=== LOGIN DEBUG ===")
+    print("Is authenticated:", current_user.is_authenticated)
+    
     if current_user.is_authenticated:
+        print("User already authenticated, redirecting to admin")
         return redirect(url_for('admin'))
         
     if request.method == 'POST':
+        print("Processing POST request")
+        print("Form data:", request.form)
+        
         user = User.query.filter_by(username=request.form['username']).first()
+        print("User found:", user is not None)
+        
         if user and check_password_hash(user.password_hash, request.form['password']):
-            login_user(user, remember=True)
+            print("Password correct, logging in user")
+            login_result = login_user(user, remember=True)
+            print("Login result:", login_result)
             
             # Aggiorna data ultimo accesso
             user.last_login = datetime.utcnow()
             db.session.commit()
             
             next_page = request.args.get('next')
+            print("Next page:", next_page)
+            print("Redirecting to:", next_page or url_for('admin'))
+            print("Is user authenticated after login:", current_user.is_authenticated)
+            
             return redirect(next_page or url_for('admin'))
+            
+        print("Invalid credentials")
         flash('Username o password non validi', 'danger')
     return render_template('login.html')
 
@@ -231,21 +280,22 @@ def add_category():
     print("Form data:", request.form)
     
     name = request.form['name']
-    parent_id = request.form.get('parent_id')
+    parent_ids = request.form.getlist('parent_id')
     
     print(f"Name: {name}")
-    print(f"Parent ID: {parent_id}")
-    
-    if parent_id and parent_id != '':
-        parent_id = int(parent_id)
-        print(f"Converting parent_id to int: {parent_id}")
-    else:
-        parent_id = None
-        print("No parent_id provided, setting to None")
+    print(f"Parent IDs: {parent_ids}")
     
     try:
-        new_category = Category(name=name, parent_id=parent_id)
+        new_category = Category(name=name)
         db.session.add(new_category)
+        
+        # Add parent relationships
+        for parent_id in parent_ids:
+            if parent_id and parent_id != '':
+                parent = Category.query.get(int(parent_id))
+                if parent:
+                    new_category.parents.append(parent)
+        
         db.session.commit()
         print(f"Category created successfully with ID: {new_category.id}")
         flash('Categoria creata con successo!', 'success')
@@ -262,65 +312,64 @@ def add_category():
 def delete_category(id):
     category = Category.query.get_or_404(id)
     
-    # Prima eliminiamo tutti i prodotti nella categoria e nelle sue sottocategorie
-    for product in category.products:
-        db.session.delete(product)
+    # Rimuoviamo solo le associazioni con i prodotti, non i prodotti stessi
+    # I prodotti rimarranno nel database se sono associati ad altre categorie
     
-    # Eliminiamo i prodotti nelle sottocategorie
+    # Eliminiamo le sottocategorie
     for subcategory in category.children:
-        for product in subcategory.products:
-            db.session.delete(product)
+        # Rimuoviamo le associazioni con i prodotti delle sottocategorie
+        subcategory.all_products = []
         db.session.delete(subcategory)
+    
+    # Rimuoviamo le associazioni con i prodotti della categoria principale
+    category.all_products = []
     
     # Infine eliminiamo la categoria
     db.session.delete(category)
     db.session.commit()
-    flash('Categoria e relativi prodotti eliminati con successo', 'success')
+    flash('Categoria eliminata con successo', 'success')
     return redirect(url_for('admin'))
 
-@app.route('/category/edit/<int:category_id>', methods=['GET', 'POST'])
+@app.route('/edit_category/<int:category_id>', methods=['GET', 'POST'])
 @login_required
 def edit_category(category_id):
     category = Category.query.get_or_404(category_id)
-    main_categories = Category.query.filter_by(parent_id=None).order_by(Category.position).all()
     
     if request.method == 'POST':
+        category.name = request.form['name']
+        
+        # Handle multiple parent categories
+        parent_ids = request.form.getlist('parent_ids')
+        # Clear existing parent relationships
+        category.parents = []
+        if parent_ids:
+            # Add new parent relationships
+            for parent_id in parent_ids:
+                if parent_id:  # Skip empty values
+                    parent = Category.query.get(int(parent_id))
+                    if parent and parent.id != category.id:  # Avoid self-reference
+                        category.parents.append(parent)
+        
+        category.icon = request.form.get('icon')
+        category.position = request.form.get('position', 0)
+        category.is_active = 'is_active' in request.form
+        category.auto_activate = 'auto_activate' in request.form
+        
+        if category.auto_activate:
+            category.active_days = request.form.get('active_days', '')
+            category.active_start_time = request.form.get('active_start_time', '00:00')
+            category.active_end_time = request.form.get('active_end_time', '23:59')
+        
         try:
-            category.name = request.form.get('name')
-            
-            # Gestione parent_id: se vuoto o uguale all'ID della categoria corrente, impostare a None
-            parent_id = request.form.get('parent_id')
-            if parent_id and parent_id != '':
-                parent_id = int(parent_id)
-                if parent_id == category.id:  # Evita riferimenti circolari
-                    parent_id = None
-            else:
-                parent_id = None
-            
-            category.parent_id = parent_id
-            category.icon = request.form.get('icon', '')
-            category.position = int(request.form.get('position', category.position))
-            category.is_active = 'is_active' in request.form
-            
-            # Gestione attivazione automatica
-            category.auto_activate = 'auto_activate' in request.form
-            
-            if category.auto_activate:
-                category.active_days = request.form.get('active_days', '0,1,2,3,4,5,6')
-                category.active_start_time = request.form.get('active_start_time', '00:00')
-                category.active_end_time = request.form.get('active_end_time', '23:59')
-                
-                # Assicurati che ci sia almeno un giorno selezionato
-                if not category.active_days:
-                    category.active_days = '0,1,2,3,4,5,6'  # Default a tutti i giorni
-            
             db.session.commit()
             flash('Categoria aggiornata con successo!', 'success')
             return redirect(url_for('admin'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Errore durante l\'aggiornamento della categoria: {str(e)}', 'danger')
+            flash(f'Errore durante l\'aggiornamento della categoria: {str(e)}', 'error')
     
+    # Get all main categories for the form
+    main_categories = Category.query.filter(Category.id != category_id).all()
     return render_template('edit_category.html', category=category, main_categories=main_categories)
 
 # Product management routes
@@ -328,9 +377,17 @@ def edit_category(category_id):
 @login_required
 def add_product():
     try:
-        # Determina l'ultima posizione nella categoria
-        category_id = int(request.form['category_id'])
-        last_position = db.session.query(db.func.max(Product.position)).filter_by(category_id=category_id).scalar() or 0
+        # Get selected categories
+        category_ids = request.form.getlist('category_ids[]')
+        if not category_ids:
+            flash('Please select at least one category', 'error')
+            return redirect(url_for('admin'))
+            
+        # Set the first selected category as the primary category
+        primary_category_id = int(category_ids[0])
+        
+        # Determine the last position in the primary category
+        last_position = db.session.query(db.func.max(Product.position)).filter_by(category_id=primary_category_id).scalar() or 0
         
         new_product = Product(
             name=request.form['name'],
@@ -338,7 +395,7 @@ def add_product():
             price=float(request.form['price']),
             price_2=float(request.form.get('price_2', 0) or 0),
             price_2_label=request.form.get('price_2_label', ''),
-            category_id=category_id,
+            category_id=primary_category_id,
             image_url=request.form.get('image_url', ''),
             is_available=bool(request.form.get('is_available', True)),
             is_featured=bool(request.form.get('is_featured', False)),
@@ -348,6 +405,11 @@ def add_product():
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
+        
+        # Add the product to all selected categories
+        categories = Category.query.filter(Category.id.in_(category_ids)).all()
+        new_product.categories.extend(categories)
+            
         db.session.add(new_product)
         db.session.commit()
         flash('Prodotto aggiunto con successo!', 'success')
@@ -361,27 +423,52 @@ def add_product():
 @login_required
 def edit_product(product_id):
     product = Product.query.get_or_404(product_id)
-    categories = Category.query.order_by(Category.parent_id, Category.position).all()
+    categories = Category.query.order_by(Category.position).all()
     
     if request.method == 'POST':
         try:
+            # Get form data with proper type conversion and validation
+            price = request.form.get('price', '')
+            price_2 = request.form.get('price_2', '')
+            position = request.form.get('position', product.position)
+            category_ids = request.form.getlist('category_ids[]')
+            
+            # Validate required fields
+            if not price or not category_ids:
+                raise ValueError('Price and at least one category are required')
+            
+            # Update product attributes
             product.name = request.form.get('name')
             product.description = request.form.get('description')
-            product.price = float(request.form.get('price', 0))
-            product.price_2 = float(request.form.get('price_2', 0) or 0)
+            product.price = float(price)
+            product.price_2 = float(price_2) if price_2 else 0
             product.price_2_label = request.form.get('price_2_label', '')
-            product.category_id = int(request.form.get('category_id'))
+            
+            # Set the first selected category as the primary category
+            if category_ids:
+                product.category_id = int(category_ids[0])
+                
+                # Update the many-to-many relationships
+                product.categories = []
+                for cat_id in category_ids:
+                    category = Category.query.get(int(cat_id))
+                    if category:
+                        product.categories.append(category)
+            
             product.image_url = request.form.get('image_url', '')
             product.is_available = 'is_available' in request.form
             product.is_featured = 'is_featured' in request.form
             product.allergens = request.form.get('allergens', '')
             product.tags = request.form.get('tags', '')
-            product.position = int(request.form.get('position', product.position))
+            product.position = int(position)
             product.updated_at = datetime.utcnow()
             
             db.session.commit()
             flash('Prodotto aggiornato con successo!', 'success')
             return redirect(url_for('admin'))
+        except ValueError as ve:
+            db.session.rollback()
+            flash(f'Errore di validazione: {str(ve)}', 'danger')
         except Exception as e:
             db.session.rollback()
             flash(f'Errore durante l\'aggiornamento del prodotto: {str(e)}', 'danger')
@@ -400,21 +487,71 @@ def delete_product(product_id):
 # API Routes per future integrazioni
 @app.route('/api/menu')
 def api_menu():
-    categories = Category.query.filter_by(is_active=True, parent_id=None).order_by(Category.position).all()
-    result = []
+    # Importa il decoratore di cache
+    from cache_utils import cache_response
     
-    for category in categories:
-        cat_dict = {
-            'id': category.id,
-            'name': category.name,
-            'products': [],
-            'subcategories': []
-        }
+    # Funzione interna che genera i dati del menu
+    # Questa funzione sarà decorata con cache_response
+    @cache_response('menu_data', duration=3600)  # Cache per 1 ora invece di 24 ore per dati più freschi
+    def generate_menu_data():
+        # Utilizziamo query ottimizzate con prefetch di relazioni per ridurre le query N+1
+        from sqlalchemy.orm import joinedload, contains_eager
+        from sqlalchemy import and_, or_, func
         
-        # Aggiungi prodotti della categoria principale
-        for product in category.products:
-            if product.is_available:
-                cat_dict['products'].append({
+        # Step 1: Preparazione - carica tutte le categorie attive in una query efficiente
+        all_categories = {}
+        categories_query = Category.query.filter_by(is_active=True).order_by(Category.position)
+        for category in categories_query:
+            all_categories[category.id] = category
+            
+        # Step 2: Mappa le relazioni genitore-figlio
+        parent_child_map = {}
+        main_categories = []
+        
+        # Usa una query ottimizzata per ottenere tutte le relazioni in una volta
+        relationships = db.session.query(
+            category_relationships.c.parent_category_id,
+            category_relationships.c.child_category_id
+        ).all()
+        
+        for parent_id, child_id in relationships:
+            if parent_id not in parent_child_map:
+                parent_child_map[parent_id] = []
+            parent_child_map[parent_id].append(child_id)
+        
+        # Identifica le categorie principali (senza genitori)
+        for cat_id, category in all_categories.items():
+            is_child = False
+            for children in parent_child_map.values():
+                if cat_id in children:
+                    is_child = True
+                    break
+            if not is_child:
+                main_categories.append(category)
+        
+        # Step 3: Ottieni tutti i prodotti disponibili in un'unica query efficiente
+        all_active_products = {}
+        products_categories_map = {}
+        
+        # Carica prodotti con join precaricati
+        products_query = db.session.query(
+            Product, Category
+        ).join(
+            product_categories, Product.id == product_categories.c.product_id
+        ).join(
+            Category, Category.id == product_categories.c.category_id
+        ).filter(
+            Product.is_available == True,
+            Category.is_active == True
+        ).options(
+            joinedload(Product.categories)
+        )
+        
+        # Organizza prodotti e relazioni
+        for product, category in products_query:
+            # Memorizza prodotto se non è già registrato
+            if product.id not in all_active_products:
+                all_active_products[product.id] = {
                     'id': product.id,
                     'name': product.name,
                     'description': product.description,
@@ -424,36 +561,65 @@ def api_menu():
                     'image_url': product.image_url,
                     'allergens': product.allergens,
                     'tags': product.tags
-                })
+                }
+            
+            # Mappa prodotto a categoria
+            if category.id not in products_categories_map:
+                products_categories_map[category.id] = []
+            if product.id not in products_categories_map[category.id]:
+                products_categories_map[category.id].append(product.id)
         
-        # Aggiungi sottocategorie
-        for subcategory in category.get_subcategories():
-            subcat_dict = {
-                'id': subcategory.id,
-                'name': subcategory.name,
-                'products': []
+        # Step 4: Costruzione risultato JSON ottimizzato
+        result = []
+        
+        # Ordina le categorie principali per posizione
+        main_categories.sort(key=lambda x: x.position)
+        
+        for main_cat in main_categories:
+            products_for_category = []
+            
+            # Aggiungi prodotti per questa categoria
+            if main_cat.id in products_categories_map:
+                for product_id in products_categories_map[main_cat.id]:
+                    products_for_category.append(all_active_products[product_id])
+            
+            # Prepara struttura categoria principale
+            cat_dict = {
+                'id': main_cat.id,
+                'name': main_cat.name,
+                'products': products_for_category,
+                'subcategories': []
             }
             
-            # Aggiungi prodotti della sottocategoria
-            for product in subcategory.products:
-                if product.is_available:
-                    subcat_dict['products'].append({
-                        'id': product.id,
-                        'name': product.name,
-                        'description': product.description,
-                        'price': product.price,
-                        'price_2': product.price_2,
-                        'price_2_label': product.price_2_label,
-                        'image_url': product.image_url,
-                        'allergens': product.allergens,
-                        'tags': product.tags
-                    })
+            # Aggiungi sottocategorie se esistono
+            if main_cat.id in parent_child_map:
+                subcategories = []
+                for subcat_id in parent_child_map[main_cat.id]:
+                    if subcat_id in all_categories and all_categories[subcat_id].is_active:
+                        subcat = all_categories[subcat_id]
+                        subcat_products = []
+                        
+                        # Aggiungi prodotti per questa sottocategoria
+                        if subcat.id in products_categories_map:
+                            for product_id in products_categories_map[subcat.id]:
+                                subcat_products.append(all_active_products[product_id])
+                        
+                        subcategories.append({
+                            'id': subcat.id,
+                            'name': subcat.name,
+                            'products': subcat_products
+                        })
+                
+                # Ordina sottocategorie per posizione
+                subcategories.sort(key=lambda x: all_categories[x['id']].position)
+                cat_dict['subcategories'] = subcategories
             
-            cat_dict['subcategories'].append(subcat_dict)
+            result.append(cat_dict)
         
-        result.append(cat_dict)
+        return result
     
-    return jsonify(result)
+    # Chiama la funzione decorata per ottenere i dati del menu con cache
+    return jsonify(generate_menu_data())
 
 # Rotta per filtrare prodotti per tag
 @app.route('/tag/<tag>')

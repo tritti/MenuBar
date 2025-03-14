@@ -75,35 +75,69 @@
     <div class="filters-container mt-3 mb-4">
         <div class="btn-group filters-group" role="group">
             <button type="button" class="btn btn-sm btn-primary filter-btn active" data-filter="all">Tutto</button>
+            <!-- Usa un metodo più efficiente per generare i tag -->
             {% set all_tags = [] %}
-            {% for category in categories %}
-                {% for product in category.active_products() %}
-                    {% if product.tags %}
-                        {% for tag in product.tags.split(',') %}
-                            {% if tag.strip() not in all_tags %}
-                                {% set _ = all_tags.append(tag.strip()) %}
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                {% endfor %}
-                {% for subcategory in category.get_subcategories() %}
-                    {% for product in subcategory.active_products() %}
-                        {% if product.tags %}
-                            {% for tag in product.tags.split(',') %}
-                                {% if tag.strip() not in all_tags %}
-                                    {% set _ = all_tags.append(tag.strip()) %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                {% endfor %}
-            {% endfor %}
-            {% for tag in all_tags | sort %}
-                {% set tag_class = "btn-outline-" + tag.lower().replace('-', '') %}
-                <a href="{{ url_for('products_by_tag', tag=tag) }}" class="btn btn-sm {{ tag_class }}">{{ tag }}</a>
-            {% endfor %}
+            
+            {# Usiamo un metodo JavaScript per popolare i tag dal menu API per migliorare le prestazioni #}
+            <span id="tag-buttons-container"></span>
         </div>
     </div>
+    
+    <script>
+    // Script per caricare dinamicamente i tag dalla risposta API
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ottieni il contenitore dei tag
+        const tagContainer = document.getElementById('tag-buttons-container');
+        if (!tagContainer) return;
+        
+        // Funzione per estrarre tag unici dal menu API
+        function extractTagsFromMenuData(menuData) {
+            const allTags = new Set();
+            
+            // Funzione helper per estrarre tag da un prodotto
+            function extractTagsFromProduct(product) {
+                if (product.tags) {
+                    product.tags.split(',').forEach(tag => {
+                        const trimmedTag = tag.trim();
+                        if (trimmedTag) allTags.add(trimmedTag);
+                    });
+                }
+            }
+            
+            // Estrai tag da categorie principali
+            menuData.forEach(category => {
+                // Prodotti nella categoria principale
+                category.products.forEach(extractTagsFromProduct);
+                
+                // Prodotti nelle sottocategorie
+                if (category.subcategories) {
+                    category.subcategories.forEach(subcategory => {
+                        subcategory.products.forEach(extractTagsFromProduct);
+                    });
+                }
+            });
+            
+            return Array.from(allTags).sort();
+        }
+        
+        // Usa i dati in cache o carica dal server
+        if (typeof MenuCache !== 'undefined') {
+            MenuCache.fetchMenuData(function(data) {
+                const uniqueTags = extractTagsFromMenuData(data);
+                
+                // Popola i pulsanti dei tag
+                uniqueTags.forEach(tag => {
+                    const tagClass = "btn-outline-" + tag.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const tagBtn = document.createElement('a');
+                    tagBtn.href = "/tag/" + encodeURIComponent(tag);
+                    tagBtn.className = "btn btn-sm " + tagClass;
+                    tagBtn.textContent = tag;
+                    tagContainer.appendChild(tagBtn);
+                });
+            });
+        }
+    });
+    </script>
 
     {% if categories %}
         <div class="categories-accordion" id="categoriesAccordion">
@@ -135,7 +169,7 @@
                                              data-tags="{{ product.tags }}">
                                             <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
                                                 {% if product.image_url %}
-                                                    <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
+                                                    <img data-src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
                                                 {% endif %}
                                                 <div class="card-body">
                                                     {% if product.is_featured %}
@@ -208,7 +242,7 @@
                                                                     data-tags="{{ product.tags }}">
                                                                     <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
                                                                         {% if product.image_url %}
-                                                                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
+                                                                            <img data-src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
                                                                         {% endif %}
                                                                         <div class="card-body">
                                                                             {% if product.is_featured %}
@@ -278,9 +312,23 @@
     </button>
 </div>
 
-<!-- Script per la ricerca e filtri -->
+<!-- Script per la ricerca, filtri e caching -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inizializza il caching del menu se disponibile
+    if (typeof MenuCache !== 'undefined') {
+        console.log('Menu cache initialized');
+        
+        // Aggiungi un indicatore di caricamento
+        const menuContainer = document.querySelector('.menu-container');
+        if (menuContainer) {
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.id = 'menu-loading';
+            loadingIndicator.className = 'text-center py-4 d-none';
+            loadingIndicator.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div><p class="mt-2">Caricamento menu...</p>';
+            menuContainer.prepend(loadingIndicator);
+        }
+    }
     // Ricerca nel menu
     const searchInput = document.getElementById('menuSearch');
     const menuItems = document.querySelectorAll('.menu-item');
