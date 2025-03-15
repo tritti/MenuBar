@@ -499,15 +499,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Toggle dark mode
     function initDarkMode() {
-        console.log("Initializing dark mode...");
         const darkModeToggle = document.getElementById('darkModeToggle');
+        if (!darkModeToggle) return;
         
-        if (!darkModeToggle) {
-            console.log("Dark mode toggle button not found");
-            return;
+        // Funzione per prevenire il flash
+        function preventDarkModeFlash() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+            // Se dark mode è attiva, aggiungi subito la classe
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark-transitioning');
+                document.body.classList.add('dark-mode');
+            }
         }
         
-        console.log("Dark mode toggle button found");
+        // Preveni il flash all'inizio
+        preventDarkModeFlash();
         
         // Funzione per aggiornare l'interfaccia in base alla modalità
         function updateDarkModeUI(isDark) {
@@ -518,14 +524,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 darkModeToggle.setAttribute('title', 'Passa alla modalità chiara');
                 darkModeToggle.classList.remove('btn-outline-light');
                 darkModeToggle.classList.add('btn-warning');
-                console.log("Dark mode enabled");
                 
                 // Forza la navbar ad essere in dark mode
                 const navbar = document.querySelector('.navbar');
-                navbar.classList.remove('bg-light');
-                navbar.classList.add('bg-dark');
-                navbar.classList.add('navbar-dark');
-                
+                if (navbar) {
+                    navbar.classList.remove('bg-light');
+                    navbar.classList.add('bg-dark');
+                    navbar.classList.add('navbar-dark');
+                }
             } else {
                 document.body.classList.remove('dark-mode');
                 document.body.classList.add('light-mode');
@@ -533,21 +539,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 darkModeToggle.setAttribute('title', 'Passa alla modalità scura');
                 darkModeToggle.classList.remove('btn-warning');
                 darkModeToggle.classList.add('btn-outline-light');
-                console.log("Dark mode disabled");
             }
         }
         
         // Evento al click del pulsante
         darkModeToggle.addEventListener('click', function() {
-            console.log("Dark mode toggle clicked");
             const isDarkMode = !document.body.classList.contains('dark-mode');
             localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
             updateDarkModeUI(isDarkMode);
+            
+            // Se si passa alla dark mode, previeni il flash per le navigazioni successive
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark-transitioning');
+            } else {
+                document.documentElement.classList.remove('dark-transitioning');
+            }
         });
         
         // Controlla le preferenze salvate dall'utente
         const savedDarkMode = localStorage.getItem('darkMode');
-        console.log("Saved dark mode preference:", savedDarkMode);
         
         if (savedDarkMode === 'enabled') {
             updateDarkModeUI(true);
@@ -556,14 +566,17 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Se non ci sono preferenze, usa le preferenze di sistema
             const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            console.log("System prefers dark mode:", prefersDarkScheme);
             updateDarkModeUI(prefersDarkScheme);
+            // Salva la preferenza
+            localStorage.setItem('darkMode', prefersDarkScheme ? 'enabled' : 'disabled');
         }
         
         // Aggiungi un listener per i cambiamenti nelle preferenze di sistema
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             if (localStorage.getItem('darkMode') === null) {
                 updateDarkModeUI(e.matches);
+                // Salva la preferenza
+                localStorage.setItem('darkMode', e.matches ? 'enabled' : 'disabled');
             }
         });
     }

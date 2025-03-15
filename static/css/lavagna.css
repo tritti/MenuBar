@@ -1,0 +1,406 @@
+/* Stile per la modalità Lavagna */
+body.lavagna-mode {
+    background-color: #000;
+    color: #fff;
+}
+
+body.lavagna-mode,
+html.lavagna-transitioning {
+    background-image: url('../images/lavagna.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Stile per la transizione per evitare il flash */
+html.lavagna-transitioning,
+html.dark-transitioning {
+    transition: none !important;
+}
+
+html.lavagna-transitioning *,
+html.dark-transitioning * {
+    transition: none !important;
+    animation: none !important;
+}
+
+html.dark-transitioning {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+/* Stile per la modalità kiosk */
+body.kiosk-mode {
+    overflow: hidden; /* Impedisce lo scrolling */
+}
+
+body.kiosk-mode .menu-container {
+    padding-top: 0;
+    margin-top: 0;
+    max-width: 100%;
+}
+
+body.kiosk-mode.lavagna-mode .book-navigation-controls {
+    bottom: 30px; /* Posiziona più in basso per evitare sovrapposizioni */
+    z-index: 2000;
+}
+
+body.lavagna-mode .menu-container {
+    background: transparent;
+    color: white;
+    box-shadow: none;
+    margin-bottom: 60px; /* Spazio per la navigazione */
+}
+
+/* Nascondi il footer in modalità lavagna */
+body.lavagna-mode .footer {
+    display: none;
+}
+
+/* Stile della navbar in modalità lavagna */
+body.lavagna-mode .navbar {
+    background: rgba(0, 0, 0, 0.7) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.lavagna-mode .navbar-brand {
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+body.lavagna-mode .nav-link {
+    font-family: 'Architects Daughter', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+body.lavagna-mode .dropdown-menu {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+body.lavagna-mode .dropdown-item {
+    color: white;
+    font-family: 'Architects Daughter', cursive, 'Comic Sans MS', sans-serif;
+}
+
+/* Titoli delle categorie con effetto gesso colorato */
+body.lavagna-mode .accordion-button {
+    background: transparent !important;
+    color: #ffffff !important; /* Bianco gesso */
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    border: none;
+    box-shadow: none !important;
+    font-size: 2rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+body.lavagna-mode .accordion-button:hover {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+body.lavagna-mode .accordion-button:not(.collapsed) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+body.lavagna-mode .accordion-body {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+/* Stile sottocategorie */
+body.lavagna-mode .subcategory-button {
+    background: transparent !important;
+    color: #87CEEB !important; /* Azzurro chiaro gesso */
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    border: none;
+    box-shadow: none !important;
+    text-shadow: 0 0 5px rgba(135, 206, 235, 0.5);
+    font-size: 1.5rem;
+    padding: 1rem;
+}
+
+body.lavagna-mode .subcategory-button:hover {
+    text-shadow: 0 0 10px rgba(135, 206, 235, 0.8);
+}
+
+body.lavagna-mode .subcategory-section {
+    background: transparent;
+    border-left: 2px solid rgba(135, 206, 235, 0.3);
+}
+
+/* Stile prodotti */
+body.lavagna-mode .card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+body.lavagna-mode .card-body {
+    background: transparent;
+    border: none;
+}
+
+body.lavagna-mode .card-title {
+    color: white !important;
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+body.lavagna-mode .card-text,
+body.lavagna-mode .card-subtitle {
+    color: white !important;
+    font-family: 'Chalk', 'Comic Sans MS', sans-serif;
+}
+
+/* Migliora il sottotitolo della categoria nella pagina dei tag */
+body.lavagna-mode .card-subtitle {
+    color: rgba(173, 216, 230, 0.8) !important; /* Azzurro chiaro */
+    font-style: italic;
+    margin-top: -5px;
+}
+
+body.lavagna-mode .price {
+    color: white !important;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+body.lavagna-mode .price-2 {
+    color: #cccccc !important;
+}
+
+/* Stile per i badge (tag) */
+body.lavagna-mode .badge, 
+body.lavagna-mode a.badge {
+    background-color: transparent !important;
+    border: 1px dashed rgba(255, 255, 255, 0.5) !important;
+    color: white !important;
+    font-family: 'Architects Daughter', cursive, 'Comic Sans MS', sans-serif;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    margin: 3px;
+    border-radius: 15px;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+/* Armonizza i bottoni dei tag nella pagina dei tag e nella pagina principale */
+body.lavagna-mode .tag-navigation .btn,
+body.lavagna-mode .filters-container .btn,
+body.lavagna-mode #tag-buttons-container .btn,
+body.lavagna-mode .btn-tag-lavagna {
+    background-color: transparent !important;
+    border: 1px dashed rgba(255, 255, 255, 0.5) !important;
+    color: white !important;
+    font-family: 'Architects Daughter', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    margin: 0 5px;
+}
+
+body.lavagna-mode .tag-navigation .btn:hover,
+body.lavagna-mode .filters-container .btn:hover,
+body.lavagna-mode #tag-buttons-container .btn:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Bottone "Tutto" (filtro attivo nella pagina principale) */
+body.lavagna-mode .filters-container .btn.active {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Armonizza il titolo del caffè nella pagina dei tag */
+body.lavagna-mode .cafe-title {
+    color: white !important;
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Stile per il badge del tag corrente nella pagina dei tag */
+body.lavagna-mode h2 .badge {
+    font-size: 1.5rem !important;
+    padding: 10px 20px !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Stile per il container nella pagina dei tag */
+body.lavagna-mode .container.py-4 {
+    background: transparent;
+}
+
+body.lavagna-mode a.badge:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Colori specifici per i tag in modalità lavagna */
+body.lavagna-mode .badge-vegano, 
+body.lavagna-mode a.badge-vegano,
+body.lavagna-mode .btn-vegano,
+body.lavagna-mode .btn-outline-vegano,
+body.lavagna-mode [class*="btn-outline-vegano"] {
+    border-color: rgba(144, 238, 144, 0.5) !important; /* Verde chiaro */
+    color: rgb(144, 238, 144) !important;
+}
+
+body.lavagna-mode .badge-vegetariano, 
+body.lavagna-mode a.badge-vegetariano,
+body.lavagna-mode .btn-vegetariano,
+body.lavagna-mode .btn-outline-vegetariano,
+body.lavagna-mode [class*="btn-outline-vegetariano"] {
+    border-color: rgba(173, 255, 47, 0.5) !important; /* Verde-giallo */
+    color: rgb(173, 255, 47) !important;
+}
+
+body.lavagna-mode .badge-piccante, 
+body.lavagna-mode a.badge-piccante,
+body.lavagna-mode .btn-piccante,
+body.lavagna-mode .btn-outline-piccante,
+body.lavagna-mode [class*="btn-outline-piccante"] {
+    border-color: rgba(255, 99, 71, 0.5) !important; /* Rosso-arancio */
+    color: rgb(255, 99, 71) !important;
+}
+
+body.lavagna-mode .badge-glutenfree, 
+body.lavagna-mode a.badge-glutenfree,
+body.lavagna-mode .btn-glutenfree,
+body.lavagna-mode .btn-outline-glutenfree,
+body.lavagna-mode [class*="btn-outline-glutenfree"] {
+    border-color: rgba(255, 165, 0, 0.5) !important; /* Arancione */
+    color: rgb(255, 165, 0) !important;
+}
+
+body.lavagna-mode .badge-bio, 
+body.lavagna-mode a.badge-bio,
+body.lavagna-mode .btn-bio,
+body.lavagna-mode .btn-outline-bio,
+body.lavagna-mode [class*="btn-outline-bio"] {
+    border-color: rgba(173, 216, 230, 0.5) !important; /* Celeste */
+    color: rgb(173, 216, 230) !important;
+}
+
+body.lavagna-mode .badge-artigianale, 
+body.lavagna-mode a.badge-artigianale,
+body.lavagna-mode .btn-artigianale,
+body.lavagna-mode .btn-outline-artigianale,
+body.lavagna-mode [class*="btn-outline-artigianale"] {
+    border-color: rgba(221, 160, 221, 0.5) !important; /* Viola chiaro */
+    color: rgb(221, 160, 221) !important;
+}
+
+/* Animazione per effetto pagina che si gira */
+@keyframes flip-page {
+    0% {
+        transform: translateX(-100%) rotateY(90deg);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0) rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+body.lavagna-mode .accordion-body {
+    animation: flip-page 0.6s ease-out;
+    transform-origin: left center;
+    perspective: 1000px;
+}
+
+/* Pulsante "Dettagli" */
+body.lavagna-mode .view-details-btn {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    color: white !important;
+    font-family: 'Architects Daughter', cursive, 'Comic Sans MS', sans-serif;
+    padding: 8px 15px;
+    font-size: 1rem;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+body.lavagna-mode .view-details-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Pulsante per tornare in cima */
+body.lavagna-mode .back-to-top {
+    background-color: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Stile per la finestra modale */
+body.lavagna-mode .modal-content {
+    background-image: url('../images/lavagna.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+
+body.lavagna-mode .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: transparent;
+}
+
+body.lavagna-mode .modal-title {
+    color: #ffcc00;
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+}
+
+body.lavagna-mode .btn-close {
+    filter: invert(1);
+}
+
+/* Stile per le categorie in evidenza */
+body.lavagna-mode .featured-products-section {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+body.lavagna-mode .featured-title {
+    color: #ffcc00;
+    font-family: 'Chewy', cursive, 'Comic Sans MS', sans-serif;
+    text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
+
+body.lavagna-mode .featured-badge {
+    background: rgba(255, 204, 0, 0.3);
+    color: white;
+}
+
+body.lavagna-mode .featured-card {
+    border: 2px dashed rgba(255, 204, 0, 0.5);
+}
+
+/* Font per effetto gesso */
+@font-face {
+    font-family: 'Chalk';
+    src: url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
+    font-display: swap;
+}
+
+/* Importa font Chewy per titoli */
+@import url('https://fonts.googleapis.com/css2?family=Chewy&display=swap');

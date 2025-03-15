@@ -2,7 +2,19 @@
 
 {% block content %}
 <div class="admin-container">
-    <h1 class="mb-4">Gestione Menu</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestione Menu</h1>
+        <div class="d-flex">
+            <button id="lavagnaToggle" class="btn btn-outline-secondary">
+                <i class="fas fa-chalkboard me-1"></i> Modalità Lavagna: <span>Disattiva</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Tooltip informativo -->
+    <div class="alert alert-info mb-3">
+        <i class="fas fa-info-circle me-2"></i> Per attivare la modalità Kiosk, utilizza il menu <strong>Strumenti</strong> nella barra di navigazione in alto. La modalità Kiosk visualizza il menu a schermo intero senza barra e footer. Premi ESC per uscire.
+    </div>
 
     <!-- Add Product Form -->
     <div class="card mb-4">
@@ -71,7 +83,7 @@
                         </div>
                         
                         <!-- Modal per selezionare le immagini -->
-                        <div class="modal fade" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true">
+                        <div class="modal fade image-picker-modal" id="imagePickerModal" tabindex="-1" aria-labelledby="imagePickerModalLabel" aria-hidden="true" data-bs-backdrop="static">
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -306,13 +318,30 @@
                                 }
                             }
                             
-                            // Carica le immagini quando si apre il modal
-                            imagePickerModal.addEventListener('show.bs.modal', loadImages);
+                            // Carica le immagini quando si apre il modal e aggiungi fix per sfarfallio
+                            imagePickerModal.addEventListener('show.bs.modal', function() {
+                                // Disabilita transizioni durante l'apertura
+                                document.body.classList.add('modal-open-no-animation');
+                                loadImages();
+                            });
+                            
+                            // Rimuovi la classe di fix quando il modal si chiude
+                            imagePickerModal.addEventListener('hidden.bs.modal', function() {
+                                document.body.classList.remove('modal-open-no-animation');
+                            });
                             
                             function loadImages() {
                                 // Mostra il loader
                                 imageLoader.style.display = 'block';
                                 imageGallery.innerHTML = '';
+                                
+                                // Imposta stili per migliorare la performance e prevenire sfarfallio
+                                imageGallery.style.willChange = 'transform';
+                                imageGallery.style.transform = 'translateZ(0)';
+                                imageGallery.style.backfaceVisibility = 'hidden';
+                                
+                                // Disabilita temporaneamente le transizioni durante il caricamento
+                                imageGallery.style.transition = 'none';
                                 
                                 // Richiedi le immagini all'API
                                 fetch('/api/images')
@@ -327,22 +356,47 @@
                                             return;
                                         }
                                         
+                                        // Crea un frammento per migliorare le prestazioni
+                                        const fragment = document.createDocumentFragment();
+                                        
+                                        // Fase 1: Crea le card senza immagini e aggiungile al DOM
+                                        const imageData = [];
+                                        
                                         images.forEach(image => {
                                             const col = document.createElement('div');
                                             col.className = 'col-md-3 col-sm-4 col-6 mb-3';
                                             
-                                            col.innerHTML = `
-                                                <div class="card image-card h-100">
-                                                    <img src="${image.url}" class="card-img-top" alt="${image.name}" style="height: 100px; object-fit: cover;">
-                                                    <div class="card-body p-2">
-                                                        <p class="card-text small text-truncate">${image.name}</p>
-                                                        <button type="button" class="btn btn-sm btn-primary w-100 select-image">Seleziona</button>
-                                                    </div>
-                                                </div>
-                                            `;
+                                            const card = document.createElement('div');
+                                            card.className = 'card h-100';
+                                            card.style.transition = 'none';
+                                            
+                                            const imgPlaceholder = document.createElement('div');
+                                            imgPlaceholder.className = 'card-img-top bg-light';
+                                            imgPlaceholder.style.height = '100px';
+                                            imgPlaceholder.style.display = 'flex';
+                                            imgPlaceholder.style.alignItems = 'center';
+                                            imgPlaceholder.style.justifyContent = 'center';
+                                            
+                                            // Aggiungi un'icona placeholder
+                                            const iconPlaceholder = document.createElement('i');
+                                            iconPlaceholder.className = 'fas fa-image text-muted fa-2x';
+                                            imgPlaceholder.appendChild(iconPlaceholder);
+                                            
+                                            const cardBody = document.createElement('div');
+                                            cardBody.className = 'card-body p-2';
+                                            
+                                            // Nome file
+                                            const filename = document.createElement('h6');
+                                            filename.className = 'card-title mb-2 text-truncate';
+                                            filename.style.fontSize = '0.9rem';
+                                            filename.textContent = image.name || image.url.split('/').pop();
+                                            
+                                            const selectButton = document.createElement('button');
+                                            selectButton.className = 'btn btn-sm btn-primary w-100 select-image';
+                                            selectButton.textContent = 'Seleziona';
+                                            selectButton.type = 'button';
                                             
                                             // Aggiungi event listener al pulsante Seleziona
-                                            const selectButton = col.querySelector('.select-image');
                                             selectButton.addEventListener('click', function() {
                                                 imageUrl.value = image.url;
                                                 updateImagePreview();
@@ -352,8 +406,49 @@
                                                 modal.hide();
                                             });
                                             
-                                            imageGallery.appendChild(col);
+                                            // Costruisci la struttura DOM 
+                                            cardBody.appendChild(filename);
+                                            cardBody.appendChild(selectButton);
+                                            card.appendChild(imgPlaceholder);
+                                            card.appendChild(cardBody);
+                                            col.appendChild(card);
+                                            
+                                            fragment.appendChild(col);
+                                            
+                                            // Salva riferimenti per la fase 2
+                                            imageData.push({
+                                                url: image.url,
+                                                placeholder: imgPlaceholder
+                                            });
                                         });
+                                        
+                                        // Aggiungi tutto al DOM in una sola operazione
+                                        imageGallery.appendChild(fragment);
+                                        
+                                        // Fase 2: Aggiungi le immagini dopo un breve ritardo
+                                        setTimeout(() => {
+                                            imageData.forEach(item => {
+                                                // Crea una nuova immagine con caricamento controllato
+                                                const img = new Image();
+                                                
+                                                // Imposta lo stile dell'immagine prima di caricarla
+                                                img.className = 'card-img-top';
+                                                img.style.height = '100px';
+                                                img.style.objectFit = 'cover';
+                                                img.style.transition = 'none';
+                                                img.alt = '';
+                                                
+                                                // Sostituisci il placeholder con l'immagine solo quando è carica
+                                                img.onload = function() {
+                                                    if (item.placeholder.parentNode) {
+                                                        item.placeholder.parentNode.replaceChild(img, item.placeholder);
+                                                    }
+                                                };
+                                                
+                                                // Imposta il src per avviare il caricamento
+                                                img.src = item.url;
+                                            });
+                                        }, 300); // Ritardo maggiore per sicurezza
                                     })
                                     .catch(error => {
                                         console.error('Errore nel caricamento delle immagini:', error);
