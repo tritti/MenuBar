@@ -2,6 +2,25 @@
 
 {% block content %}
 <div class="menu-container" style="--primary-color: {{ theme.primary_color }}; --secondary-color: {{ theme.secondary_color }};">
+    <!-- Modal per i dettagli del prodotto -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="product-image-container mb-3" id="modalProductImage"></div>
+                    <p class="product-description" id="modalProductDescription"></p>
+                    <div class="price-container mb-2" id="modalProductPrice"></div>
+                    <div class="allergens-container mt-3" id="modalProductAllergens"></div>
+                    <div class="tags-container mt-3" id="modalProductTags"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="container py-4">
         <!-- Titolo locale -->
         <div class="text-center mb-3">
@@ -28,14 +47,7 @@
         <div class="row menu-items">
             {% for product in products %}
                 <div class="col-6 col-md-4 mb-4 menu-item">
-                    <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
-                        {% if product.image_url %}
-                            <picture>
-                                <source srcset="{{ product.image_url }}.webp" type="image/webp">
-                                <source srcset="{{ product.image_url }}" type="image/png">
-                                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
-                            </picture>
-                        {% endif %}
+                    <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}" data-bs-toggle="modal" data-bs-target="#productModal" data-product-name="{{ product.name }}" data-product-description="{{ product.description }}" data-product-price="{{ product.price }}" data-product-price2="{{ product.price_2 }}" data-product-price2-label="{{ product.price_2_label }}" data-product-allergens="{{ product.allergens }}" data-product-image="{{ product.image_url }}" data-product-tags="{{ product.tags }}">
                         <div class="card-body">
                             {% if product.is_featured %}
                             <span class="featured-badge">In evidenza</span>
@@ -70,10 +82,13 @@
                             <div class="tags-container mt-2">
                                 {% for tag in product.tags.split(',') %}
                                     {% set tag_class = "badge-" + tag.strip().lower().replace('-', '') %}
-                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 {{ tag_class }}">{{ tag.strip() }}</a>
+                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 mb-1 {{ tag_class }}" onclick="event.stopPropagation();">{{ tag.strip() }}</a>
                                 {% endfor %}
                             </div>
                             {% endif %}
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary view-details-btn">Dettagli</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -91,7 +106,7 @@
     </button>
 </div>
 
-<!-- Script per la ricerca e filtri -->
+<!-- Script per la gestione della finestra modale e altre funzionalità -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Pulsante torna in cima
@@ -111,6 +126,92 @@ document.addEventListener('DOMContentLoaded', function() {
             behavior: 'smooth'
         });
     });
+    
+    // Gestione finestra modale per dettagli prodotto
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('show.bs.modal', function(event) {
+            // Elemento che ha attivato la modale
+            const button = event.relatedTarget;
+            
+            // Estrai le informazioni del prodotto dai data attributes
+            const productName = button.getAttribute('data-product-name');
+            const productDescription = button.getAttribute('data-product-description') || '';
+            const productPrice = button.getAttribute('data-product-price');
+            const productPrice2 = button.getAttribute('data-product-price2');
+            const productPrice2Label = button.getAttribute('data-product-price2-label');
+            const productAllergens = button.getAttribute('data-product-allergens');
+            const productImage = button.getAttribute('data-product-image');
+            const productTags = button.getAttribute('data-product-tags');
+            
+            // Aggiorna i contenuti della modale
+            const modalTitle = productModal.querySelector('.modal-title');
+            const modalDescription = productModal.querySelector('#modalProductDescription');
+            const modalPrice = productModal.querySelector('#modalProductPrice');
+            const modalAllergens = productModal.querySelector('#modalProductAllergens');
+            const modalImage = productModal.querySelector('#modalProductImage');
+            const modalTags = productModal.querySelector('#modalProductTags');
+            
+            // Imposta il titolo
+            modalTitle.textContent = productName;
+            
+            // Imposta la descrizione
+            modalDescription.textContent = productDescription;
+            
+            // Imposta il prezzo
+            if (productPrice) {
+                let priceHtml = `<p class="price mb-0">€ ${parseFloat(productPrice).toFixed(2)}</p>`;
+                
+                if (productPrice2 && parseFloat(productPrice2) > 0) {
+                    let price2Text = '';
+                    if (productPrice2Label) {
+                        price2Text = `${productPrice2Label}: `;
+                    }
+                    priceHtml += `<p class="price-2">${price2Text}€ ${parseFloat(productPrice2).toFixed(2)}</p>`;
+                }
+                
+                modalPrice.innerHTML = priceHtml;
+                modalPrice.style.display = 'block';
+            } else {
+                modalPrice.style.display = 'none';
+            }
+            
+            // Imposta allergeni
+            if (productAllergens) {
+                modalAllergens.innerHTML = `<small class="text-muted">Allergeni: ${productAllergens}</small>`;
+                modalAllergens.style.display = 'block';
+            } else {
+                modalAllergens.style.display = 'none';
+            }
+            
+            // Imposta immagine
+            if (productImage) {
+                modalImage.innerHTML = `<img src="${productImage}" alt="${productName}" class="img-fluid">`;
+                modalImage.style.display = 'block';
+            } else {
+                modalImage.style.display = 'none';
+            }
+            
+            // Imposta tag
+            if (productTags) {
+                const tagsArray = productTags.split(',');
+                let tagsHtml = '';
+                
+                tagsArray.forEach(tag => {
+                    const trimmedTag = tag.trim();
+                    if (trimmedTag) {
+                        const tagClass = `badge-${trimmedTag.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+                        tagsHtml += `<a href="/tag/${encodeURIComponent(trimmedTag)}" class="badge bg-light text-dark me-1 mb-1 ${tagClass}">${trimmedTag}</a>`;
+                    }
+                });
+                
+                modalTags.innerHTML = tagsHtml;
+                modalTags.style.display = 'block';
+            } else {
+                modalTags.style.display = 'none';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

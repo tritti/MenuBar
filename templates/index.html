@@ -2,6 +2,25 @@
 
 {% block content %}
 <div class="menu-container" style="--primary-color: {{ theme.primary_color }}; --secondary-color: {{ theme.secondary_color }};">
+    <!-- Modal per i dettagli del prodotto -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="product-image-container mb-3" id="modalProductImage"></div>
+                    <p class="product-description" id="modalProductDescription"></p>
+                    <div class="price-container mb-2" id="modalProductPrice"></div>
+                    <div class="allergens-container mt-3" id="modalProductAllergens"></div>
+                    <div class="tags-container mt-3" id="modalProductTags"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Sezione Prodotti in Evidenza -->
     {% if featured_products %}
     <div class="featured-products-section mb-5">
@@ -9,10 +28,7 @@
         <div class="row featured-products-slider">
             {% for product in featured_products %}
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
-                    <div class="card featured-card h-100">
-                        {% if product.image_url %}
-                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
-                        {% endif %}
+                    <div class="card featured-card h-100" data-bs-toggle="modal" data-bs-target="#productModal" data-product-name="{{ product.name }}" data-product-description="{{ product.description }}" data-product-price="{{ product.price }}" data-product-price2="{{ product.price_2 }}" data-product-price2-label="{{ product.price_2_label }}" data-product-allergens="{{ product.allergens }}" data-product-image="{{ product.image_url }}" data-product-tags="{{ product.tags }}">
                         <div class="card-body">
                             <span class="featured-badge">In evidenza</span>
                             <h5 class="card-title">{{ product.name }}</h5>
@@ -45,10 +61,13 @@
                             <div class="tags-container mt-2">
                                 {% for tag in product.tags.split(',') %}
                                     {% set tag_class = "badge-" + tag.strip().lower().replace('-', '') %}
-                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 {{ tag_class }}">{{ tag.strip() }}</a>
+                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 {{ tag_class }}" onclick="event.stopPropagation();">{{ tag.strip() }}</a>
                                 {% endfor %}
                             </div>
                             {% endif %}
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary view-details-btn">Dettagli</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -167,10 +186,7 @@
                                     {% for product in category.active_products() %}
                                         <div class="col-6 col-md-4 mb-4 menu-item" 
                                              data-tags="{{ product.tags }}">
-                                            <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
-                                                {% if product.image_url %}
-                                                    <img data-src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
-                                                {% endif %}
+                                            <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}" data-bs-toggle="modal" data-bs-target="#productModal" data-product-name="{{ product.name }}" data-product-description="{{ product.description }}" data-product-price="{{ product.price }}" data-product-price2="{{ product.price_2 }}" data-product-price2-label="{{ product.price_2_label }}" data-product-allergens="{{ product.allergens }}" data-product-image="{{ product.image_url }}" data-product-tags="{{ product.tags }}">
                                                 <div class="card-body">
                                                     {% if product.is_featured %}
                                                     <span class="featured-badge">In evidenza</span>
@@ -204,10 +220,13 @@
                                                     <div class="tags-container mt-2">
                                                         {% for tag in product.tags.split(',') %}
                                                             {% set tag_class = "badge-" + tag.strip().lower().replace('-', '') %}
-                                                            <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 {{ tag_class }}">{{ tag.strip() }}</a>
+                                                            <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 mb-1 {{ tag_class }}" onclick="event.stopPropagation();">{{ tag.strip() }}</a>
                                                         {% endfor %}
                                                     </div>
                                                     {% endif %}
+                                                    <div class="text-center mt-3">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary view-details-btn">Dettagli</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -240,10 +259,7 @@
                                                             {% for product in subcategory.active_products() %}
                                                                 <div class="col-6 col-md-4 mb-4 menu-item"
                                                                     data-tags="{{ product.tags }}">
-                                                                    <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}">
-                                                                        {% if product.image_url %}
-                                                                            <img data-src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy">
-                                                                        {% endif %}
+                                                                    <div class="card h-100 {% if product.is_featured %}featured-card{% endif %}" data-bs-toggle="modal" data-bs-target="#productModal" data-product-name="{{ product.name }}" data-product-description="{{ product.description }}" data-product-price="{{ product.price }}" data-product-price2="{{ product.price_2 }}" data-product-price2-label="{{ product.price_2_label }}" data-product-allergens="{{ product.allergens }}" data-product-image="{{ product.image_url }}" data-product-tags="{{ product.tags }}">
                                                                         <div class="card-body">
                                                                             {% if product.is_featured %}
                                                                             <span class="featured-badge">In evidenza</span>
@@ -277,10 +293,13 @@
                                                                             <div class="tags-container mt-2 text-center">
                                                                                 {% for tag in product.tags.split(',') %}
                                                                                     {% set tag_class = "badge-" + tag.strip().lower().replace('-', '') %}
-                                                                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 mb-1 {{ tag_class }}">{{ tag.strip() }}</a>
+                                                                                    <a href="{{ url_for('products_by_tag', tag=tag.strip()) }}" class="badge bg-light text-dark me-1 mb-1 {{ tag_class }}" onclick="event.stopPropagation();">{{ tag.strip() }}</a>
                                                                                 {% endfor %}
                                                                             </div>
                                                                             {% endif %}
+                                                                            <div class="text-center mt-3">
+                                                                                <button type="button" class="btn btn-sm btn-outline-primary view-details-btn">Dettagli</button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>

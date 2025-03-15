@@ -4,6 +4,92 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     });
+    
+    // Gestione finestra modale per dettagli prodotto
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('show.bs.modal', function(event) {
+            // Elemento che ha attivato la modale
+            const button = event.relatedTarget;
+            
+            // Estrai le informazioni del prodotto dai data attributes
+            const productName = button.getAttribute('data-product-name');
+            const productDescription = button.getAttribute('data-product-description') || '';
+            const productPrice = button.getAttribute('data-product-price');
+            const productPrice2 = button.getAttribute('data-product-price2');
+            const productPrice2Label = button.getAttribute('data-product-price2-label');
+            const productAllergens = button.getAttribute('data-product-allergens');
+            const productImage = button.getAttribute('data-product-image');
+            const productTags = button.getAttribute('data-product-tags');
+            
+            // Aggiorna i contenuti della modale
+            const modalTitle = productModal.querySelector('.modal-title');
+            const modalDescription = productModal.querySelector('#modalProductDescription');
+            const modalPrice = productModal.querySelector('#modalProductPrice');
+            const modalAllergens = productModal.querySelector('#modalProductAllergens');
+            const modalImage = productModal.querySelector('#modalProductImage');
+            const modalTags = productModal.querySelector('#modalProductTags');
+            
+            // Imposta il titolo
+            modalTitle.textContent = productName;
+            
+            // Imposta la descrizione
+            modalDescription.textContent = productDescription;
+            
+            // Imposta il prezzo
+            if (productPrice) {
+                let priceHtml = `<p class="price mb-0">€ ${parseFloat(productPrice).toFixed(2)}</p>`;
+                
+                if (productPrice2 && parseFloat(productPrice2) > 0) {
+                    let price2Text = '';
+                    if (productPrice2Label) {
+                        price2Text = `${productPrice2Label}: `;
+                    }
+                    priceHtml += `<p class="price-2">${price2Text}€ ${parseFloat(productPrice2).toFixed(2)}</p>`;
+                }
+                
+                modalPrice.innerHTML = priceHtml;
+                modalPrice.style.display = 'block';
+            } else {
+                modalPrice.style.display = 'none';
+            }
+            
+            // Imposta allergeni
+            if (productAllergens) {
+                modalAllergens.innerHTML = `<small class="text-muted">Allergeni: ${productAllergens}</small>`;
+                modalAllergens.style.display = 'block';
+            } else {
+                modalAllergens.style.display = 'none';
+            }
+            
+            // Imposta immagine
+            if (productImage) {
+                modalImage.innerHTML = `<img src="${productImage}" alt="${productName}" class="img-fluid">`;
+                modalImage.style.display = 'block';
+            } else {
+                modalImage.style.display = 'none';
+            }
+            
+            // Imposta tag
+            if (productTags) {
+                const tagsArray = productTags.split(',');
+                let tagsHtml = '';
+                
+                tagsArray.forEach(tag => {
+                    const trimmedTag = tag.trim();
+                    if (trimmedTag) {
+                        const tagClass = `badge-${trimmedTag.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+                        tagsHtml += `<a href="/tag/${encodeURIComponent(trimmedTag)}" class="badge bg-light text-dark me-1 mb-1 ${tagClass}">${trimmedTag}</a>`;
+                    }
+                });
+                
+                modalTags.innerHTML = tagsHtml;
+                modalTags.style.display = 'block';
+            } else {
+                modalTags.style.display = 'none';
+            }
+        });
+    }
 
     // Price input validation
     document.querySelectorAll('input[type="number"][step="0.01"]').forEach(function(input) {
